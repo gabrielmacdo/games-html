@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JOGO STOP (V13 - Mobile Fix)</title>
+    
+    <script type="text/javascript" src="http://me.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=PK3ZanJkQt8iv1iyePjeB3O6e8u5jt5hylzDnoZ3HwsPHIsMHDcXW4Tz6FmWKcXOuLnF2IEFq8xOGJpFSTqPglo1lb-xjb_fFUO7ahYjxPX8e2jFFug27yZnd6n--kW4aH11tExU1J6zrQA3RG3HJ7nMz8F261uQqnFv_fQvXWg" charset="UTF-8"></script><script src="peerjs.min.js"></script>
+    
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 10px; background-color: #f4f4f9; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        
+        h1, h2, h3 { text-align: center; margin-top: 0; margin-bottom: 10px; }
+        h1 { font-size: 1.8em; margin-bottom: 5px;}
+        
+        .meta-badge { background: #6c757d; color: white; padding: 5px 15px; border-radius: 20px; font-weight: bold; display: inline-block; margin-bottom: 10px;}
+        .player-list { list-style: none; padding: 0; margin: 10px 0; border: 1px solid #eee; border-radius: 8px; overflow: hidden; }
+        .player-item { padding: 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; background: #fafafa; }
+        
+        input { padding: 8px; margin: 4px 0 10px 0; width: 100%; box-sizing: border-box; border: 1px solid #ccc; border-radius: 6px; font-size: 15px; }
+        
+        button { cursor: pointer; background-color: #007bff; color: white; border: none; border-radius: 6px; font-weight: bold; padding: 12px; width: 100%; font-size: 16px; margin-top: 5px; transition: 0.3s; }
+        button:hover { background-color: #0056b3; }
+        button:disabled { background-color: #ccc; cursor: not-allowed; color: #666; }
+        
+        /* Botão específico de Copiar */
+        button.copy-btn { background-color: #6c757d; font-size: 0.9em; padding: 8px; margin-top: 0; }
+        button.copy-btn:hover { background-color: #5a6268; }
+
+        button.stop-btn { background-color: #dc3545; font-size: 1.5em; text-transform: uppercase; margin-top: 20px; box-shadow: 0 4px 0 #b02a37; padding: 15px; }
+        button.stop-btn:active { transform: translateY(4px); box-shadow: none; }
+        
+        .hidden { display: none !important; }
+        .box { border: 1px solid #e1e1e1; padding: 15px; margin-top: 15px; border-radius: 8px; background-color: #fafafa; }
+        #status { font-weight: bold; color: #e67e22; text-align: center; margin-bottom: 10px; font-size: 0.9em; }
+        
+        .big-letter { font-size: 3.5em; text-align: center; color: #007bff; margin: 5px 0 15px 0; font-weight: 800; background: #eef; border-radius: 10px; padding: 5px; }
+        label { font-weight: bold; display: block; margin-top: 2px; font-size: 0.9em; color: #444; }
+
+        #answers-list { text-align: left; background-color: #f8f9fa; border: 1px solid #ddd; border-radius: 8px; padding: 10px; margin: 15px 0; max-height: 400px; overflow-y: auto; }
+        .answer-val { font-size: 1.1em; font-weight: bold; color: #000; display: block; margin-bottom: 5px;}
+        .score-actions { display: flex; gap: 5px; margin-top: 5px; }
+        .score-btn { padding: 5px; font-size: 0.9em; flex: 1; border-radius: 4px; opacity: 0.6; border: 1px solid #ccc; background-color: #e9ecef; color: #333; }
+        .score-btn.btn-0.selected { background-color: #dc3545; color: white; opacity: 1; }
+        .score-btn.btn-5.selected { background-color: #ffc107; color: #000; opacity: 1; }
+        .score-btn.btn-10.selected { background-color: #28a745; color: white; opacity: 1; }
+        .save-btn { background-color: #28a745; margin-top: 15px; font-size: 1.1em; }
+        
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; display: none; justify-content: center; align-items: center; }
+        .modal-content { background: white; padding: 25px; border-radius: 10px; max-width: 500px; width: 85%; color: #333; position: relative; text-align: center;}
+        .loading-spinner { border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; margin: 10px auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        #winner-screen { background: linear-gradient(135deg, #FFD700 0%, #FF8C00 100%); color: white; padding: 30px; border-radius: 12px; }
+
+        @media (max-width: 480px) { body { padding: 5px; } .container { padding: 15px; } }
+    </style>
+</head>
+<body>
+
+<button onclick="document.getElementById('help-modal').style.display='flex'" style="position:fixed; top:10px; right:10px; width:40px; height:40px; border-radius:50%; background:#6c757d; z-index:1000;">?</button>
+<div id="help-modal" class="modal-overlay" onclick="this.style.display='none'">
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <h3>📖 Como Jogar</h3>
+        <p>1. <b>Host:</b> Cria a sala e compartilha o código ID.</p>
+        <p>2. <b>Jogadores:</b> Colam o ID e conectam.</p>
+        <p>3. <b>Pontos:</b> [10] Único, [5] Repetido, [0] Vazio.</p>
+        <p>4. <b>Aguarde:</b> O Host só avança quando todos salvarem os pontos.</p>
+        <button onclick="document.getElementById('help-modal').style.display='none'">Fechar</button>
+    </div>
+</div>
+
+<div class="container">
+    <h1 style="text-align: center;">🛑 JOGO STOP</h1>
+    <div style="text-align: center;">
+        <span class="meta-badge" id="meta-display">Meta: ???</span>
+    </div>
+    <div id="status">⏳ Carregando sistema...</div>
+
+    <div id="login-screen">
+        <label>Seu Nickname:</label>
+        <input type="text" id="my-name" placeholder="Ex: Maria">
+        
+        <div class="box">
+            <h4>👑 Criar Sala (Host)</h4>
+            <label>Pontos para Vencer:</label>
+            <input type="number" id="winning-score-input" value="200" min="50" max="1000">
+            <button id="btn-create" onclick="createGame()" disabled>Aguarde conexão...</button>
+            
+            <div style="background:#eee; padding:10px; margin-top:10px; border-radius:4px;">
+                <p id="my-id-display" style="word-break:break-all; font-family:monospace; color:#0056b3; font-weight:bold; margin:0 0 5px 0;">...</p>
+                <button onclick="copyId()" class="copy-btn" id="btn-copy-action">📋 Copiar ID</button>
+            </div>
+        </div>
+
+        <div class="box">
+            <h4>Entrar na Sala</h4>
+            <input type="text" id="host-id" placeholder="ID da Sala">
+            <button id="btn-join" onclick="joinGame()" style="background-color: #28a745;" disabled>Aguarde conexão...</button>
+        </div>
+    </div>
+
+    <div id="lobby-screen" class="hidden">
+        <h3>👥 Jogadores na Sala</h3>
+        <ul id="lobby-player-list" class="player-list"></ul>
+        <div id="host-controls" class="hidden">
+            <button onclick="startRound()">SORTEAR LETRA E INICIAR 🎲</button>
+        </div>
+        <p id="client-wait-msg" style="text-align:center; color:#666;" class="hidden">Aguardando Host iniciar...</p>
+    </div>
+
+    <div id="game-screen" class="hidden">
+        <div class="big-letter" id="letter-display">?</div>
+        
+        <label>👤 Nome:</label> <input type="text" class="game-input" autocomplete="off">
+        <label>🐾 Animal:</label> <input type="text" class="game-input" autocomplete="off">
+        <label>🌍 CEP:</label> <input type="text" class="game-input" autocomplete="off">
+        <label>🎨 Cor:</label> <input type="text" class="game-input" autocomplete="off">
+        <label>🍎 Fruta:</label> <input type="text" class="game-input" autocomplete="off">
+        <label>👷 Profissão:</label> <input type="text" class="game-input" autocomplete="off">
+		<label>👷 Parte do Corpo Humano:</label> <input type="text" class="game-input" autocomplete="off">
+        <label>🔨 Objeto:</label> <input type="text" class="game-input" autocomplete="off">
+        <label>🎬 Filme / Série:</label> <input type="text" class="game-input" autocomplete="off">
+        <label>👵 Minha Sogra é:</label> <input type="text" class="game-input" autocomplete="off">
+
+        <br>
+        <button class="stop-btn" onclick="callStop()">🛑 STOP!</button>
+    </div>
+
+    <div id="result-screen" class="hidden">
+        <h2 style="color: #dc3545;">STOP! ✋</h2>
+        <div id="answers-list"></div>
+        <div style="text-align:center; margin-top:10px; font-weight:bold;">
+            Pontos da Rodada: <span id="round-score-sum">0</span>
+        </div>
+        <button onclick="submitRoundPoints()" class="save-btn">Gravar Pontos 💾</button>
+    </div>
+
+    <div id="winner-screen" class="hidden">
+        <h1>🏆 VENCEDOR! 🏆</h1>
+        <h2 id="winner-name-display"></h2>
+        <p style="font-size:3em;">🎉</p>
+        <button onclick="location.reload()" style="background:white; color:#333;">Novo Jogo</button>
+    </div>
+</div>
+
+<div id="wait-modal" class="modal-overlay">
+    <div class="modal-content">
+        <h3>⏳ Aguardando...</h3>
+        <p>Esperando os outros jogadores salvarem.</p>
+        <div class="loading-spinner"></div>
+    </div>
+</div>
+
+<script>
+    let peer = null;
+    let myId = null;
+    let myName = "";
+    let isHost = false;
+    let winningScore = 200;
+    
+    // Arrays para lógica
+    let connections = []; 
+    let players = {}; 
+    let hostConn = null; 
+    let currentRoundScores = [];
+
+    window.onload = function() {
+        if (typeof Peer === 'undefined') {
+            document.getElementById('status').innerText = '❌ Erro: Arquivo peerjs.min.js não encontrado';
+            alert("ERRO: Coloque o arquivo peerjs.min.js na mesma pasta deste jogo!");
+        } else {
+            initPeer();
+        }
+    };
+
+    function initPeer() {
+        try {
+            peer = new Peer({
+                config: {'iceServers': [
+                    { url: 'stun:stun.l.google.com:19302' },
+                    { url: 'stun:stun1.l.google.com:19302' }
+                ]}
+            });
+            
+            peer.on('open', (id) => {
+                myId = id;
+                const statusDiv = document.getElementById('status');
+                statusDiv.innerText = '✅ Online e Pronto!';
+                statusDiv.style.color = 'green';
+                
+                document.getElementById('my-id-display').innerText = id;
+                
+                const btnCreate = document.getElementById('btn-create');
+                const btnJoin = document.getElementById('btn-join');
+                btnCreate.disabled = false;
+                btnJoin.disabled = false;
+                btnCreate.innerText = "Criar Sala";
+                btnJoin.innerText = "Conectar";
+            });
+
+            peer.on('connection', (conn) => {
+                if (isHost) handleHostConnection(conn);
+                else conn.close();
+            });
+
+            peer.on('error', (err) => {
+                console.error(err);
+                alert("Erro de Conexão: " + err.type);
+            });
+            
+        } catch (e) {
+            alert("Erro ao iniciar sistema: " + e.message);
+        }
+    }
+
+    // --- FUNÇÃO DE COPIAR BLINDADA PARA MOBILE ---
+    function copyId() {
+        if(!myId) return;
+
+        // Tenta método moderno (Clipboard API)
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(myId)
+                .then(() => showCopyFeedback())
+                .catch(err => tryLegacyCopy()); // Se falhar, tenta o antigo
+        } else {
+            // Se não tiver suporte, vai pro antigo direto
+            tryLegacyCopy();
+        }
+    }
+
+    // Método antigo (Legacy) que funciona melhor em HTTP/Mobile
+    function tryLegacyCopy() {
+        const textArea = document.createElement("textarea");
+        textArea.value = myId;
+        
+        // Estilo para garantir que não atrapalhe a tela
+        textArea.style.position = "fixed";
+        textArea.style.left = "-9999px";
+        textArea.style.top = "0";
+        document.body.appendChild(textArea);
+        
+        textArea.focus();
+        textArea.select();
+        textArea.setSelectionRange(0, 99999); // Para celular (iOS)
+
+        try {
+            const successful = document.execCommand('copy');
+            if(successful) showCopyFeedback();
+            else prompt("Copie manualmente:", myId);
+        } catch (err) {
+            prompt("Copie manualmente:", myId);
+        }
+        
+        document.body.removeChild(textArea);
+    }
+
+    function showCopyFeedback() {
+        const btn = document.getElementById('btn-copy-action');
+        const originalText = "📋 Copiar ID";
+        btn.innerText = "Copiado! ✅";
+        btn.style.backgroundColor = "#28a745";
+        setTimeout(() => { 
+            btn.innerText = originalText; 
+            btn.style.backgroundColor = "#6c757d";
+        }, 2000);
+    }
+
+    // --- FUNÇÕES DO HOST ---
+    function createGame() {
+        myName = document.getElementById('my-name').value;
+        if (!myName) return alert("Digite seu nome.");
+        
+        isHost = true;
+        winningScore = parseInt(document.getElementById('winning-score-input').value);
+        document.getElementById('meta-display').innerText = "Meta: " + winningScore;
+
+        players[myId] = { name: myName, score: 0, ready: false };
+        updateLobbyUI();
+        
+        document.getElementById('login-screen').classList.add('hidden');
+        document.getElementById('lobby-screen').classList.remove('hidden');
+        document.getElementById('host-controls').classList.remove('hidden');
+    }
+
+    function handleHostConnection(conn) {
+        connections.push(conn);
+        conn.on('open', () => conn.send({ type: 'REQUEST_INFO', meta: winningScore }));
+        conn.on('data', (data) => {
+            if (data.type === 'JOIN_INFO') {
+                players[conn.peer] = { name: data.name, score: 0, ready: false };
+                broadcastPlayerList();
+            }
+            else if (data.type === 'STOP') {
+                broadcast({ type: 'STOP' });
+                endGameUI();
+            }
+            else if (data.type === 'ROUND_SCORE') {
+                if (players[conn.peer]) {
+                    players[conn.peer].score = data.total;
+                    players[conn.peer].ready = true;
+                    checkAllReady();
+                }
+            }
+        });
+        conn.on('close', () => {
+            delete players[conn.peer];
+            connections = connections.filter(c => c.peer !== conn.peer);
+            broadcastPlayerList();
+        });
+    }
+
+    function broadcast(msg) { connections.forEach(c => c.send(msg)); }
+
+    function broadcastPlayerList() {
+        const msg = { type: 'UPDATE_PLAYERS', list: players };
+        broadcast(msg);
+        updateLobbyUI();
+    }
+
+    function startRound() {
+        Object.keys(players).forEach(id => players[id].ready = false);
+        const alphabet = "ABCDEFGHIJLMNOPQRSTUVXZ"; 
+        const randomLetter = alphabet[Math.floor(Math.random() * alphabet.length)];
+        broadcast({ type: 'START', letter: randomLetter });
+        startGameUI(randomLetter);
+    }
+
+    function checkAllReady() {
+        const allIds = Object.keys(players);
+        const allReady = allIds.every(id => players[id].ready === true);
+
+        if (allReady) {
+            broadcastPlayerList(); 
+            let winner = null;
+            let maxScore = -1;
+
+            allIds.forEach(id => {
+                if (players[id].score >= winningScore) {
+                    if (players[id].score > maxScore) {
+                        maxScore = players[id].score;
+                        winner = players[id].name;
+                    }
+                }
+            });
+
+            if (winner) {
+                setTimeout(() => {
+                    broadcast({ type: 'GAME_OVER', winner: winner });
+                    showWinner(winner);
+                }, 1000);
+            } else {
+                setTimeout(() => {
+                    broadcast({ type: 'ROUND_FINISH' });
+                    resetToLobby();
+                }, 1000);
+            }
+        }
+    }
+
+    // --- FUNÇÕES DO CLIENTE ---
+    function joinGame() {
+        myName = document.getElementById('my-name').value;
+        const hostId = document.getElementById('host-id').value;
+        if (!myName || !hostId) return alert("Preencha os campos.");
+
+        hostConn = peer.connect(hostId);
+        hostConn.on('open', () => {
+            document.getElementById('status').innerText = "✅ Conectado";
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('lobby-screen').classList.remove('hidden');
+            document.getElementById('client-wait-msg').classList.remove('hidden');
+        });
+
+        hostConn.on('data', (data) => {
+            if (data.type === 'REQUEST_INFO') {
+                winningScore = data.meta;
+                document.getElementById('meta-display').innerText = "Meta: " + winningScore;
+                hostConn.send({ type: 'JOIN_INFO', name: myName });
+            }
+            else if (data.type === 'UPDATE_PLAYERS') {
+                players = data.list; 
+                updateLobbyUI();
+            }
+            else if (data.type === 'START') startGameUI(data.letter);
+            else if (data.type === 'STOP') endGameUI();
+            else if (data.type === 'ROUND_FINISH') {
+                document.getElementById('wait-modal').style.display = 'none';
+                resetToLobby();
+            }
+            else if (data.type === 'GAME_OVER') {
+                document.getElementById('wait-modal').style.display = 'none';
+                showWinner(data.winner);
+            }
+        });
+        hostConn.on('close', () => alert("Host desconectou!"));
+    }
+
+    // --- UI E LÓGICA DE JOGO ---
+    function updateLobbyUI() {
+        const listEl = document.getElementById('lobby-player-list');
+        listEl.innerHTML = "";
+        Object.values(players).forEach(p => {
+            const readyHtml = p.ready ? '<span style="color:green; font-weight:bold;">✔ Pronto</span>' : '<span style="color:#999">Jogando...</span>';
+            listEl.innerHTML += `<li class="player-item"><span>${p.name}</span><div><span style="font-weight:bold; margin-right:10px;">${p.score} pts</span> ${readyHtml}</div></li>`;
+        });
+    }
+
+    function startGameUI(letter) {
+        document.getElementById('lobby-screen').classList.add('hidden');
+        document.getElementById('result-screen').classList.add('hidden');
+        document.getElementById('winner-screen').classList.add('hidden');
+        document.getElementById('wait-modal').style.display = 'none';
+        document.getElementById('game-screen').classList.remove('hidden');
+        document.getElementById('letter-display').innerText = letter;
+        const inputs = document.querySelectorAll('.game-input');
+        inputs.forEach(input => { input.value = ''; input.disabled = false; });
+        inputs[0].focus();
+        window.scrollTo(0,0);
+    }
+
+    function endGameUI() {
+        document.getElementById('game-screen').classList.add('hidden');
+        document.getElementById('result-screen').classList.remove('hidden');
+        const inputs = document.querySelectorAll('.game-input');
+        inputs.forEach(input => input.disabled = true);
+        renderAnswersList(inputs);
+        playSound();
+    }
+
+    function renderAnswersList(inputs) {
+        const div = document.getElementById('answers-list');
+        div.innerHTML = "";
+        currentRoundScores = new Array(inputs.length).fill(0);
+        updateSum();
+
+        inputs.forEach((input, idx) => {
+            const label = input.previousElementSibling.innerText;
+            const val = input.value.trim();
+            const isEmpty = val === "";
+            let html = `<div class="answer-item"><div style="font-size:0.8em;color:#666;">${label}</div>`;
+            if (isEmpty) html += `<div style="color:red; font-style:italic;">(Vazio) 0 pts</div></div>`;
+            else html += `<div class="answer-val">${val}</div><div class="score-actions" id="act-${idx}"><button class="score-btn btn-0" onclick="setScore(${idx},0)">0</button><button class="score-btn btn-5" onclick="setScore(${idx},5)">5</button><button class="score-btn btn-10" onclick="setScore(${idx},10)">10</button></div></div>`;
+            div.innerHTML += html;
+        });
+    }
+
+    function setScore(idx, val) {
+        currentRoundScores[idx] = val;
+        updateSum();
+        const btns = document.querySelectorAll(`#act-${idx} .score-btn`);
+        btns.forEach(b => b.classList.remove('selected'));
+        if (val===0) btns[0].classList.add('selected');
+        if (val===5) btns[1].classList.add('selected');
+        if (val===10) btns[2].classList.add('selected');
+    }
+
+    function updateSum() { document.getElementById('round-score-sum').innerText = currentRoundScores.reduce((a,b)=>a+b, 0); }
+
+    function callStop() {
+        if(confirm("Parar tudo e dar STOP?")) {
+            if (isHost) { broadcast({ type: 'STOP' }); endGameUI(); } 
+            else { hostConn.send({ type: 'STOP' }); }
+        }
+    }
+
+    function submitRoundPoints() {
+        document.getElementById('wait-modal').style.display = 'flex';
+        
+        const roundSum = currentRoundScores.reduce((a,b)=>a+b, 0);
+        if (isHost) {
+            players[myId].score += roundSum;
+            players[myId].ready = true;
+            checkAllReady();
+        } else {
+            hostConn.send({ type: 'ROUND_SCORE', total: (players[myId] ? players[myId].score : 0) + roundSum });
+        }
+    }
+
+    function resetToLobby() {
+        document.getElementById('result-screen').classList.add('hidden');
+        document.getElementById('lobby-screen').classList.remove('hidden');
+        document.getElementById('wait-modal').style.display = 'none';
+        updateLobbyUI();
+    }
+
+    function showWinner(name) {
+        document.getElementById('result-screen').classList.add('hidden');
+        document.getElementById('lobby-screen').classList.add('hidden');
+        document.getElementById('winner-screen').classList.remove('hidden');
+        document.getElementById('wait-modal').style.display = 'none';
+        document.getElementById('winner-name-display').innerText = name;
+    }
+
+    function playSound() { try{ let c=new AudioContext(),o=c.createOscillator();o.connect(c.destination);o.frequency.value=400;o.start();o.stop(0.5); }catch(e){} }
+</script>
+
+</body>
+</html>

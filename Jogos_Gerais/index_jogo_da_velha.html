@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jogo da Velha Responsivo</title>
+    <style>
+        /* Estilos Globais e Centralização */
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            font-family: 'Arial', sans-serif;
+            background-color: #f0f4f8;
+        }
+
+        h1 {
+            color: #1e3a5f;
+            margin-bottom: 20px;
+        }
+
+        /* Controles e Mensagens */
+        #controls, #message, #game-container {
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+        
+        #controls {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        #message {
+            font-size: 1.5em;
+            font-weight: bold;
+            min-height: 40px; /* Garante espaço reservado */
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        button {
+            padding: 10px 15px;
+            font-size: 1em;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+
+        #start-game-btn {
+            background-color: #007bff;
+            color: white;
+        }
+        #start-game-btn:hover {
+            background-color: #0056b3;
+        }
+        
+        #reset-btn {
+            background-color: #ffc107;
+            color: #333;
+        }
+        #reset-btn:hover {
+            background-color: #e0a800;
+        }
+
+        /* Tabuleiro do Jogo */
+        #game-board {
+            display: grid;
+            /* 3 colunas de tamanho igual */
+            grid-template-columns: repeat(3, 1fr); 
+            /* 3 linhas de tamanho igual */
+            grid-template-rows: repeat(3, 1fr);
+            
+            /* ESSENCIAL PARA RESPONSIVIDADE: 
+               O tabuleiro ocupa 90% da largura da tela, mas com limite */
+            width: 90vw; 
+            max-width: 400px; 
+            
+            /* Faz com que a altura do tabuleiro seja igual à largura (quadrado perfeito) */
+            height: 90vw; 
+            max-height: 400px;
+            
+            border: 3px solid #333;
+            background-color: #fff;
+        }
+
+        /* Células do Tabuleiro */
+        .cell {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 4em; /* Tamanho do símbolo ajusta-se automaticamente com a célula */
+            font-weight: bold;
+            border: 1px solid #ccc;
+            cursor: pointer;
+            user-select: none; /* Impede que o texto seja selecionado */
+        }
+
+        /* Linhas divisórias (melhora a aparência do tabuleiro) */
+        .cell:nth-child(3n) { border-right: none; }
+        .cell:nth-child(n+7) { border-bottom: none; }
+        .cell:nth-child(3n+1) { border-left: none; }
+        .cell:nth-child(n+1):nth-child(-n+3) { border-top: none; }
+
+
+        /* Estilização dos Jogadores */
+        .player-x {
+            color: black; /* X na cor preta, conforme solicitado */
+        }
+        .player-o {
+            color: red; /* Círculo na cor vermelha, conforme solicitado */
+        }
+    </style>
+</head>
+<body>
+    <h1>Jogo da Velha</h1>
+
+    <div id="controls">
+        <select id="game-mode-select">
+            <option value="2-player">👥 2 Jogadores</option>
+            <option value="robot">🤖 Contra o Robô</option>
+        </select>
+        <button id="start-game-btn" onclick="startGame()">Iniciar Novo Jogo</button>
+    </div>
+
+    <div id="message">Selecione o modo de jogo e clique em Iniciar.</div>
+
+    <div id="game-container">
+        </div>
+
+    <button id="reset-btn" onclick="startGame()" style="display: none;">Reiniciar Jogo</button>
+
+    <script>
+        const messageElement = document.getElementById('message');
+        const gameContainer = document.getElementById('game-container');
+        const modeSelect = document.getElementById('game-mode-select');
+        const resetButton = document.getElementById('reset-btn');
+
+        let board = Array(9).fill(null); // Estado do tabuleiro (null, 'X', 'O')
+        let currentPlayer = 'X';
+        let gameActive = false;
+        let gameMode = '2-player'; // '2-player' ou 'robot'
+
+        // Sequências de vitória
+        const winningCombinations = [
+            [0, 1, 2], [3, 4, 5], [6, 7, 8], // Linhas
+            [0, 3, 6], [1, 4, 7], [2, 5, 8], // Colunas
+            [0, 4, 8], [2, 4, 6]             // Diagonais
+        ];
+
+        /**
+         * 1. Cria o tabuleiro no HTML e anexa listeners de clique.
+         */
+        function createBoard() {
+            gameContainer.innerHTML = '';
+            const gameBoard = document.createElement('div');
+            gameBoard.id = 'game-board';
+
+            for (let i = 0; i < 9; i++) {
+                const cell = document.createElement('div');
+                cell.classList.add('cell');
+                cell.dataset.index = i;
+                cell.addEventListener('click', handleCellClick);
+                gameBoard.appendChild(cell);
+            }
+            gameContainer.appendChild(gameBoard);
+        }
+
+        /**
+         * 2. Inicia ou reinicia o jogo.
+         */
+        function startGame() {
+            board.fill(null);
+            currentPlayer = 'X';
+            gameActive = true;
+            gameMode = modeSelect.value;
+            resetButton.style.display = 'block';
+
+            createBoard(); // Recria o tabuleiro para limpar visualmente
+            updateMessage(`Vez de ${currentPlayer}.`);
+
+            // Se for o modo robô e o robô for o primeiro a jogar (improvável, mas possível)
+            if (gameMode === 'robot' && currentPlayer === 'O') {
+                setTimeout(robotMove, 500);
+            }
+        }
+
+        /**
+         * 3. Lógica de clique na célula.
+         */
+        function handleCellClick(event) {
+            const index = event.target.dataset.index;
+
+            if (!gameActive || board[index] !== null) {
+                return;
+            }
+
+            // Jogada do usuário
+            makeMove(index, currentPlayer);
+            
+            if (checkWin(currentPlayer)) {
+                endGame(false);
+                return;
+            }
+
+            if (checkDraw()) {
+                endGame(true);
+                return;
+            }
+
+            // Alterna o jogador e, se for modo robô, chama a jogada do robô.
+            togglePlayer();
+
+            if (gameMode === 'robot' && gameActive) {
+                updateMessage("Robô pensando...");
+                // Pequeno atraso para simular o "pensamento" do robô
+                setTimeout(robotMove, 500); 
+            }
+        }
+
+        /**
+         * 4. Executa a jogada e atualiza o tabuleiro visualmente.
+         */
+        function makeMove(index, player) {
+            board[index] = player;
+            const cell = document.querySelector(`.cell[data-index="${index}"]`);
+            cell.textContent = player;
+            cell.classList.add(`player-${player.toLowerCase()}`);
+        }
+
+        /**
+         * 5. Alterna o jogador.
+         */
+        function togglePlayer() {
+            currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+            if (gameActive) {
+                updateMessage(`Vez de ${currentPlayer}.`);
+            }
+        }
+
+        /**
+         * 6. Verifica se o jogador atual venceu.
+         */
+        function checkWin(player) {
+            return winningCombinations.some(combination => {
+                return combination.every(index => board[index] === player);
+            });
+        }
+
+        /**
+         * 7. Verifica se houve empate.
+         */
+        function checkDraw() {
+            return board.every(cell => cell !== null);
+        }
+
+        /**
+         * 8. Finaliza o jogo.
+         */
+        function endGame(isDraw) {
+            gameActive = false;
+            if (isDraw) {
+                updateMessage("Parece que deu VELHA! 🤝");
+            } else {
+                updateMessage(`🎉 O Jogador ${currentPlayer} VENCEU! 🎉`);
+            }
+        }
+        
+        /**
+         * 9. Atualiza a mensagem na tela.
+         */
+        function updateMessage(text) {
+            messageElement.textContent = text;
+        }
+
+        // --- LÓGICA DO ROBÔ (IA BÁSICA) ---
+
+        /**
+         * 10. Movimento do Robô (Sempre joga com 'O').
+         */
+        function robotMove() {
+            if (!gameActive || currentPlayer !== 'O') return;
+
+            let bestMove = getBestMove();
+
+            makeMove(bestMove, 'O');
+
+            if (checkWin('O')) {
+                endGame(false);
+                return;
+            }
+
+            if (checkDraw()) {
+                endGame(true);
+                return;
+            }
+
+            togglePlayer(); // Passa para o jogador 'X'
+        }
+
+        /**
+         * 11. Implementação da estratégia do Robô.
+         */
+        function getBestMove() {
+            const availableSpots = board
+                .map((val, index) => (val === null ? index : null))
+                .filter(val => val !== null);
+            
+            // Prioridade 1: Vencer o Jogo (Se houver uma jogada para 'O' vencer)
+            for (let i = 0; i < availableSpots.length; i++) {
+                const move = availableSpots[i];
+                board[move] = 'O';
+                if (checkWin('O')) {
+                    board[move] = null; // Desfaz
+                    return move;
+                }
+                board[move] = null; // Desfaz
+            }
+
+            // Prioridade 2: Bloquear o Jogador (Se houver uma jogada para 'X' vencer)
+            for (let i = 0; i < availableSpots.length; i++) {
+                const move = availableSpots[i];
+                board[move] = 'X';
+                if (checkWin('X')) {
+                    board[move] = null; // Desfaz
+                    return move;
+                }
+                board[move] = null; // Desfaz
+            }
+
+            // Prioridade 3: Jogar no Centro (Melhor posição tática)
+            if (availableSpots.includes(4)) {
+                return 4;
+            }
+
+            // Prioridade 4: Jogar em um Canto
+            const corners = [0, 2, 6, 8].filter(index => availableSpots.includes(index));
+            if (corners.length > 0) {
+                return corners[Math.floor(Math.random() * corners.length)];
+            }
+
+            // Prioridade 5: Jogar em qualquer Lateral
+            const edges = [1, 3, 5, 7].filter(index => availableSpots.includes(index));
+            if (edges.length > 0) {
+                return edges[Math.floor(Math.random() * edges.length)];
+            }
+            
+            // Caso de fallback (não deve acontecer se houver spots disponíveis)
+            return availableSpots[0];
+        }
+
+        // 12. Inicia a configuração inicial ao carregar
+        window.onload = createBoard;
+    </script>
+</body>
+</html>

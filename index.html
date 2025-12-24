@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arcade de Jogos</title>
+    <style>
+        /* --- RESET E BASE --- */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        /* --- CABEÇALHO --- */
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 20px 0;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+            background: -webkit-linear-gradient(#00d2ff, #3a7bd5);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 800;
+        }
+
+        p.subtitle {
+            color: #a0a0a0;
+            font-size: 1.1em;
+        }
+
+        /* --- GRID DE JOGOS --- */
+        .games-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            /* Responsividade automática: ajusta colunas conforme a tela */
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+        }
+
+        /* --- CARTÃO DO JOGO --- */
+        .game-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 25px;
+            text-align: center;
+            text-decoration: none;
+            color: white;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 100%;
+        }
+
+        .game-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
+            border-color: #00d2ff;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .game-icon {
+            font-size: 4em;
+            margin-bottom: 15px;
+            display: block;
+        }
+
+        .game-title {
+            font-size: 1.5em;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .game-tag {
+            font-size: 0.8em;
+            color: #bbb;
+            margin-bottom: 20px;
+            display: block;
+        }
+
+        .play-btn {
+            background-color: #00d2ff;
+            color: #000;
+            padding: 10px 20px;
+            border-radius: 50px;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-top: auto; /* Empurra o botão para baixo */
+            display: inline-block;
+            transition: background 0.3s;
+        }
+
+        .game-card:hover .play-btn {
+            background-color: #fff;
+        }
+
+        /* --- RODAPÉ --- */
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        /* --- RESPONSIVIDADE ESPECÍFICA --- */
+        @media (max-width: 600px) {
+            h1 { font-size: 2em; }
+            .games-container { padding: 0 10px; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>🎮 Central de Jogos</h1>
+        <p class="subtitle">Escolha sua diversão e jogue agora!</p>
+    </header>
+
+    <main class="games-container">
+
+        <a href="Jogo_Stop/stop_00012_multijogador_ranking-FINAL+Btn02.html" class="game-card">
+            <span class="game-icon">🛑</span>
+            <span class="game-title">Stop / Adedonha</span>
+            <span class="game-tag">Multiplayer • Palavras</span>
+            <span class="play-btn">Jogar</span>
+        </a>
+
+        <a href="Jogos_Gerais/index_mimica - 2 - att.html" class="game-card">
+            <span class="game-icon">🎭</span>
+            <span class="game-title">Mímica</span>
+            <span class="game-tag">Grupo • Atuação</span>
+            <span class="play-btn">Jogar</span>
+        </a>
+
+        <a href="Jogos_Gerais/index_jogo_memoria_Niveis.html" class="game-card">
+            <span class="game-icon">🧠</span>
+            <span class="game-title">Jogo da Memória</span>
+            <span class="game-tag">Raciocínio • Níveis</span>
+            <span class="play-btn">Jogar</span>
+        </a>
+
+        <a href="Jogos_Gerais/index_snake_cobrinha.html" class="game-card">
+            <span class="game-icon">🐍</span>
+            <span class="game-title">Snake</span>
+            <span class="game-tag">Clássico • Agilidade</span>
+            <span class="play-btn">Jogar</span>
+        </a>
+
+        <a href="Jogos_Gerais/index_jogo_da_velha.html" class="game-card">
+            <span class="game-icon">❌⭕</span>
+            <span class="game-title">Jogo da Velha</span>
+            <span class="game-tag">Estratégia • Rápido</span>
+            <span class="play-btn">Jogar</span>
+        </a>
+
+        <a href="Jogos_Gerais/index_forca11.html" class="game-card">
+            <span class="game-icon">😵</span>
+            <span class="game-title">Forca</span>
+            <span class="game-tag">Palavras • Adivinhação</span>
+            <span class="play-btn">Jogar</span>
+        </a>
+
+        <a href="QUEM_SOU_EU/quemsoueu02_Final.html" class="game-card">
+            <span class="game-icon">❓</span>
+            <span class="game-title">Quem Sou Eu?</span>
+            <span class="game-tag">Grupo • Adivinhação</span>
+            <span class="play-btn">Jogar</span>
+        </a>
+
+        <a href="Policia_e_Ladrao/Polica_e_Ladrao11_digital.html" class="game-card">
+            <span class="game-icon">👮‍♂️</span>
+            <span class="game-title">Polícia e Ladrão(DIGITAL)</span>
+            <span class="game-tag">Ação • Estratégia</span>
+            <span class="play-btn">Jogar</span>
+        </a>
+		
+		<a href="Policia_e_Ladrao/Polica_e_Ladrao04_cartas.html" class="game-card">
+            <span class="game-icon">👮‍♂️</span>
+            <span class="game-title">Polícia e Ladrão(CARTAS)</span>
+            <span class="game-tag">Ação • Estratégia</span>
+            <span class="play-btn">Jogar</span>
+        </a>
+
+    </main>
+
+    <footer>
+        <p>Desenvolvido para diversão • Versão 1.0</p>
+    </footer>
+
+</body>
+</html>

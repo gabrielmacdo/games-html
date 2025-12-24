@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Super Forca - Sistema Anti-Repetição</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #2c3e50;
+            color: #ecf0f1;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        #container-principal {
+            background-color: #ecf0f1;
+            color: #333;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            width: 95%;
+            max-width: 700px;
+            position: relative;
+            min-height: 500px;
+        }
+
+        h1 { margin-bottom: 20px; color: #2c3e50; margin-top: 20px; }
+
+        /* --- BOTÃO DE INSTRUÇÕES (?) --- */
+        #btn-instrucoes {
+            position: absolute; top: 15px; left: 15px; width: 40px; height: 40px;
+            background-color: #3498db; color: white; font-size: 1.2em; font-weight: bold;
+            border: none; border-radius: 50%; cursor: pointer; box-shadow: 0 4px 0 #2980b9;
+            z-index: 50; transition: transform 0.1s;
+        }
+        #btn-instrucoes:hover { background-color: #5dade2; transform: scale(1.1); }
+        #btn-instrucoes:active { transform: scale(0.95); box-shadow: none; }
+
+        /* --- MODAL (POP-UP) --- */
+        .modal {
+            display: none; position: fixed; z-index: 100; left: 0; top: 0;
+            width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); backdrop-filter: blur(3px);
+        }
+        .modal-content {
+            background-color: #fff; margin: 5% auto; padding: 25px; border: 1px solid #888;
+            border-radius: 12px; width: 90%; max-width: 600px; max-height: 85vh; overflow-y: auto;
+            text-align: left; position: relative; box-shadow: 0 5px 15px rgba(0,0,0,0.3); color: #333;
+        }
+        .close-modal { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
+        .close-modal:hover { color: #000; }
+        .modal-titulo { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; margin-top: 0; }
+        .modal-subtitulo { color: #d35400; margin-top: 20px; margin-bottom: 10px; font-weight: bold; }
+        .modal-texto { font-size: 0.95em; line-height: 1.6; margin-bottom: 10px; }
+        .destaque { font-weight: bold; color: #2980b9; }
+        .tag-modal { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.8em; color: white; font-weight: bold; }
+        .tag-casual { background: #27ae60; }
+        .tag-arcade { background: #f39c12; }
+        .tag-hardcore { background: #c0392b; }
+
+        /* --- MENU --- */
+        #tela-menu { display: flex; flex-direction: column; align-items: center; gap: 20px; padding: 20px 0; }
+        .menu-grupo { width: 100%; max-width: 320px; text-align: left; }
+        label { font-weight: bold; color: #7f8c8d; display: block; margin-bottom: 5px; }
+        select { width: 100%; padding: 12px; font-size: 1.1em; border-radius: 8px; border: 1px solid #bdc3c7; background-color: white; cursor: pointer; }
+        #btn-iniciar-jogo {
+            background-color: #27ae60; color: white; font-size: 1.5em; padding: 15px 40px;
+            border: none; border-radius: 50px; cursor: pointer; margin-top: 20px;
+            box-shadow: 0 5px 0 #219150; transition: transform 0.1s;
+        }
+        #btn-iniciar-jogo:hover { background-color: #2ecc71; }
+
+        /* --- JOGO --- */
+        #tela-jogo { display: none; }
+
+        /* Painel Campanha / Info */
+        #painel-campanha {
+            display: none; background: #dfe6e9; padding: 15px; border-radius: 8px;
+            margin-bottom: 20px; border: 1px solid #bdc3c7;
+        }
+        .cabecalho-campanha { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
+        .linha-topo { display: flex; justify-content: space-between; align-items: center; font-size: 0.9em; color: #2c3e50; font-weight: bold; }
+        
+        #campanha-nome-categoria {
+            font-size: 1.4em; color: #2c3e50; text-transform: uppercase; font-weight: 900;
+            letter-spacing: 1px; border-bottom: 2px solid #bdc3c7; padding-bottom: 5px; margin-bottom: 5px;
+        }
+        .animacao-alerta { animation: piscarAlerta 0.8s infinite alternate; }
+        @keyframes piscarAlerta {
+            from { color: #2c3e50; transform: scale(1); }
+            to { color: #d35400; transform: scale(1.05); text-shadow: 0 0 10px rgba(211, 84, 0, 0.5); }
+        }
+
+        #barra-container { width: 100%; height: 20px; background-color: #b2bec3; border-radius: 10px; overflow: hidden; margin-bottom: 8px; }
+        #barra-progresso { height: 100%; width: 0%; background-color: #f39c12; transition: width 0.5s ease; }
+
+        .stats-row { display: flex; justify-content: space-between; align-items: center; }
+        #vidas-container { font-size: 1.4em; display: flex; align-items: center; gap: 5px; }
+        #fase-info { font-size: 0.9em; background: #8e44ad; color: #fff; padding: 4px 10px; border-radius: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        #pulos-info { font-size: 0.9em; background: #34495e; color: #fff; padding: 4px 10px; border-radius: 15px; }
+
+        #btn-sair-topo {
+            position: absolute; top: 15px; right: 15px; background: #c0392b; color: white;
+            border: none; border-radius: 5px; padding: 5px 10px; font-size: 0.9em; cursor: pointer; z-index: 10;
+        }
+        #palavra-display { font-size: 2.5em; letter-spacing: 5px; margin: 20px 0; min-height: 50px; color: #2980b9; font-weight: 800; word-break: break-all; }
+        #letras-erradas { color: #c0392b; font-weight: bold; }
+        #status-mensagem { font-size: 1.3em; margin-top: 15px; font-weight: bold; min-height: 30px; }
+        #teclado { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 20px; }
+        .letra-botao {
+            padding: 0; font-size: 1.1em; cursor: pointer; border: 1px solid #bdc3c7; border-radius: 6px;
+            background-color: #fff; width: 45px; height: 45px; color: #333; box-shadow: 0 3px 0 #bdc3c7;
+        }
+        .letra-botao:hover:not(:disabled) { background-color: #ecf0f1; transform: translateY(-2px); }
+        .letra-botao:disabled { cursor: not-allowed; background-color: #dfe6e9; color: #b2bec3; box-shadow: none; }
+
+        .area-botoes-acao { display: flex; justify-content: center; gap: 10px; margin-top: 25px; }
+        .btn-padrao { padding: 12px 25px; font-size: 1.1em; color: white; border: none; border-radius: 5px; cursor: pointer; box-shadow: 0 4px 0 rgba(0,0,0,0.2); }
+        #botao-acao { background-color: #27ae60; display: none; }
+        #botao-pular { background-color: #3498db; display: none; }
+        #botao-pular:disabled { background-color: #bdc3c7; cursor: not-allowed; box-shadow: none; }
+        .btn-perdeu { background-color: #e74c3c !important; }
+        #forca-canvas { border: 2px solid #2c3e50; background-color: #fff; border-radius: 4px; }
+    </style>
+</head>
+<body>
+
+    <div id="container-principal">
+        <button id="btn-instrucoes" onclick="abrirModal()">?</button>
+        <h1>Super Forca 🎯</h1>
+
+        <div id="tela-menu">
+            <div class="menu-grupo">
+                <label for="modo-jogo">Escolha o Modo de Jogo:</label>
+                <select id="modo-jogo">
+                    <optgroup label="Jogo Rápido (Arcade)">
+                        <option value="facil">Nível Fácil</option>
+                        <option value="medio" selected>Nível Médio</option>
+                        <option value="dificil">Nível Difícil</option>
+                    </optgroup>
+                    <optgroup label="Modo Campanha (A Jornada)">
+                        <option value="campanha_casual">Campanha: Casual (∞ Vidas)</option>
+                        <option value="campanha_arcade">Campanha: Arcade (Recarrega)</option>
+                        <option value="campanha_hardcore">Campanha: Hardcore (Escudo)</option>
+                    </optgroup>
+                </select>
+            </div>
+            
+            <div class="menu-grupo">
+                <label for="categoria">Categoria (Apenas Jogo Rápido):</label>
+                <select id="categoria">
+                    <option value="tecnologia">Tecnologia</option>
+                    <option value="animais">Animais</option>
+                    <option value="biblia">Bíblia</option>
+                    <option value="ciencia">Ciência</option>
+                    <option value="futebol">Futebol</option>
+                    <option value="paises">Países</option>
+                    <option value="aleatorio">🎲 Aleatório (Caos)</option>
+                </select>
+            </div>
+
+            <p style="font-size:0.8em; color:#7f8c8d; margin-top:10px;">
+                * No Modo Campanha você viajará por <strong>todas</strong> as categorias.
+            </p>
+
+            <button id="btn-iniciar-jogo" onclick="iniciarSetup()">INICIAR JOGO ▶</button>
+        </div>
+
+        <div id="tela-jogo">
+            <button id="btn-sair-topo" onclick="voltarAoMenu()">Sair ✖</button>
+
+            <div id="painel-campanha">
+                <div class="cabecalho-campanha">
+                    <div id="campanha-nome-categoria">CATEGORIA</div>
+                    <div class="linha-topo">
+                        <span id="campanha-modo-texto">MODO CASUAL</span>
+                        <span id="campanha-contador">0 / 0</span>
+                    </div>
+                </div>
+
+                <div id="barra-container">
+                    <div id="barra-progresso"></div>
+                </div>
+                <div class="stats-row">
+                    <div id="vidas-container"></div>
+                    <div id="fase-info">Fase 1/1</div>
+                    <div id="pulos-info">Pulos: <span id="pulos-valor">∞</span></div>
+                </div>
+            </div>
+
+            <canvas id="forca-canvas" width="200" height="250"></canvas>
+            <div id="palavra-display"></div>
+            <p>Erros: <span id="letras-erradas"></span></p>
+            <div id="teclado"></div>
+            <div id="status-mensagem"></div>
+            <div class="area-botoes-acao">
+                <button id="botao-pular" class="btn-padrao" onclick="pularPalavra()">⏩ Pular</button>
+                <button id="botao-acao" class="btn-padrao">Próxima</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-instrucoes" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="fecharModal()">&times;</span>
+            <h2 class="modal-titulo">Como Jogar & Regras</h2>
+            <p class="modal-texto"><span class="destaque">🎯 O Objetivo:</span> Adivinhe a palavra secreta. Cada erro desenha uma parte do boneco. Se o boneco for enforcado, você perde!</p>
+            <h3 class="modal-subtitulo">🎮 Tipos de Jogo</h3>
+            <p class="modal-texto"><strong>1. Jogo Rápido (Arcade):</strong> Partidas sem repetição. Se você jogar todas as palavras de uma categoria, a lista reinicia.</p>
+            <p class="modal-texto"><strong>2. Modo Campanha (A Jornada):</strong> O desafio definitivo! Zere <span class="destaque">TODAS</span> as categorias em sequência.</p>
+            <h3 class="modal-subtitulo">⚙️ Regras de Dificuldade</h3>
+            <p class="modal-texto"><span class="tag-modal tag-casual">Casual</span> <strong>Sem Stress:</strong> Vidas Infinitas.</p>
+            <p class="modal-texto"><span class="tag-modal tag-arcade">Arcade</span> <strong>Equilibrado:</strong> <span class="destaque">3 Vidas</span> e <span class="destaque">5 Pulos</span>. Vidas recarregam ao completar uma fase.</p>
+            <p class="modal-texto"><span class="tag-modal tag-hardcore">Hardcore</span> <strong>Desafio:</strong> Apenas <span class="destaque">1 Vida</span>! Começa com <span class="destaque">Escudo (🛡️)</span> que regenera por fase.</p>
+        </div>
+    </div>
+
+    <script>
+        // --- MODAL ---
+        const modal = document.getElementById("modal-instrucoes");
+        function abrirModal() { modal.style.display = "block"; }
+        function fecharModal() { modal.style.display = "none"; }
+        window.onclick = function(event) { if (event.target == modal) modal.style.display = "none"; }
+
+        // --- BANCO DE DADOS ---
+        const bancoDados = {
+            "tecnologia": {
+                "facil": ["MOUSE", "WIFI", "DADOS", "TELA", "APP", "JAVA"],
+                "medio": ["PYTHON", "TECLADO", "GOOGLE", "LINUX", "EXCEL"],
+                "dificil": ["ALGORITMO", "CRYPTOMOEDA", "VIRTUALIZACAO", "MICROPROCESSADOR"]
+            },
+            "animais": {
+                "facil": ["GATO", "CAO", "PATO", "LEAO", "URSO"],
+                "medio": ["GIRAFA", "MACACO", "AGUIA", "COBRA", "ZEBRA"],
+                "dificil": ["ORNITORRINCO", "HIPOPOTAMO", "CAMALEAO", "SALAMANDRA"]
+            },
+            "biblia": {
+                "facil": ["EVA", "ADAO", "NOE", "DAVI", "JO", "RUTE"],
+                "medio": ["MARIA", "JESUS", "PEDRO", "PAULO", "MOISES"],
+                "dificil": ["MELQUISEDEQUE", "NABUCODONOSOR", "MATUSALEM", "BARTIMEU"]
+            },
+            "ciencia": {
+                "facil": ["LUA", "SOL", "AGUA", "AR", "LUZ"],
+                "medio": ["FISICA", "ATOMO", "CELULA", "VACINA", "DNA"],
+                "dificil": ["FOTOSSINTESE", "GRAVIDADE", "RELATIVIDADE", "ELETRONS"]
+            },
+            "futebol": {
+                "facil": ["GOL", "BOLA", "JUCA", "TIME", "REDE"],
+                "medio": ["VASCO", "SANTOS", "GREMIO", "BAHIA", "INTER"],
+                "dificil": ["CORINTHIANS", "FLAMENGO", "BOTAFOGO", "PALMEIRAS"]
+            },
+            "paises": {
+                "facil": ["BRASIL", "CHINA", "EUA", "PERU", "CHILE"],
+                "medio": ["FRANCA", "ALEMANHA", "CANADA", "ESPANHA", "EGITO"],
+                "dificil": ["CASAQUISTAO", "QUIRGUISTAO", "LIECHTENSTEIN", "MADAGASCAR"]
+            }
+        };
+
+        const maxErrosPadrao = 6;
+        let palavraSecreta = "";
+        let letrasCorretas = new Set();
+        let letrasErradas = new Set();
+        let errosDaRodada = 0;
+        let jogoAtivo = false;
+
+        // Estado do Jogo Rápido (Saco de Palavras)
+        let poolPalavrasRapido = [];
+        let contextoRapidoAtual = ""; // Ex: "tecnologia-facil"
+
+        // Estado da Campanha
+        let estadoCampanha = {
+            ativo: false,
+            modo: null, 
+            filaCategorias: [],
+            indiceFaseAtual: 0,
+            filaPalavras: [],
+            indicePalavraAtual: 0,
+            vidasRestantes: 0,
+            pulosRestantes: 0,
+            escudoAtivo: false,
+            nivelPalavraAtualObj: "" 
+        };
+
+        // Elementos
+        const telaMenu = document.getElementById('tela-menu');
+        const telaJogo = document.getElementById('tela-jogo');
+        const selCategoria = document.getElementById('categoria');
+        const selModo = document.getElementById('modo-jogo');
+        const palavraDisplay = document.getElementById('palavra-display');
+        const letrasErradasDisplay = document.getElementById('letras-erradas');
+        const tecladoContainer = document.getElementById('teclado');
+        const statusMensagem = document.getElementById('status-mensagem');
+        const botaoAcao = document.getElementById('botao-acao');
+        const botaoPular = document.getElementById('botao-pular');
+        const canvas = document.getElementById('forca-canvas');
+        const ctx = canvas.getContext('2d');
+        const painelCampanha = document.getElementById('painel-campanha');
+        const barraProgresso = document.getElementById('barra-progresso');
+        const campanhaContador = document.getElementById('campanha-contador');
+        const campanhaTexto = document.getElementById('campanha-modo-texto');
+        const campanhaCategoria = document.getElementById('campanha-nome-categoria');
+        const vidasContainer = document.getElementById('vidas-container');
+        const pulosInfo = document.getElementById('pulos-info');
+        const pulosValor = document.getElementById('pulos-valor');
+        const faseInfo = document.getElementById('fase-info');
+        const barraContainer = document.getElementById('barra-container'); 
+
+        function removerAcentos(str) { return str.normalize("NFD").replace(/[\u0300-\u036f]/g, ""); }
+        function embaralhar(array) { return array.sort(() => Math.random() - 0.5); }
+        function randomItem(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+        // --- SETUP PRINCIPAL ---
+        function iniciarSetup() {
+            telaMenu.style.display = 'none';
+            telaJogo.style.display = 'block';
+
+            const modoSelecionado = selModo.value;
+            const ehCampanha = modoSelecionado.startsWith('campanha_');
+
+            if (ehCampanha) {
+                configurarCampanha(modoSelecionado);
+            } else {
+                iniciarJogoRapido();
+            }
+        }
+
+        // --- LÓGICA JOGO RÁPIDO (ANTI-REPETIÇÃO) ---
+        function iniciarJogoRapido() {
+            estadoCampanha.ativo = false;
+            
+            // Configura UI do Jogo Rápido
+            painelCampanha.style.display = 'block';
+            barraContainer.style.display = 'none';
+            faseInfo.style.display = 'none';
+            campanhaContador.style.display = 'none';
+            vidasContainer.innerHTML = ""; 
+            pulosInfo.style.display = 'none';
+
+            // Verifica Mudança de Contexto (Se usuário trocou de categoria/nivel)
+            const cat = selCategoria.value;
+            const mod = selModo.value;
+            const novoContexto = `${cat}-${mod}`;
+
+            if (novoContexto !== contextoRapidoAtual) {
+                // Se mudou, resetamos o saco de palavras
+                poolPalavrasRapido = [];
+                contextoRapidoAtual = novoContexto;
+            }
+
+            sortearPalavraRapida();
+        }
+
+        function sortearPalavraRapida() {
+            const cat = selCategoria.value;
+            const mod = selModo.value;
+
+            // 1. Encher o Saco se estiver vazio
+            if (poolPalavrasRapido.length === 0) {
+                let listaTemp = [];
+                
+                if (cat === 'aleatorio') {
+                    // Pega TODAS as palavras de TODAS as categorias naquele nível
+                    Object.keys(bancoDados).forEach(chave => {
+                        const lista = bancoDados[chave][mod] || bancoDados[chave]['medio'];
+                        // Guarda como objeto para saber a categoria original depois
+                        lista.forEach(p => listaTemp.push({ texto: p, categoriaOriginal: chave }));
+                    });
+                } else {
+                    const lista = bancoDados[cat][mod];
+                    lista.forEach(p => listaTemp.push({ texto: p, categoriaOriginal: cat }));
+                }
+
+                // Enche o saco com cópias
+                poolPalavrasRapido = embaralhar([...listaTemp]);
+                
+                // Aviso visual (Opcional)
+                if (statusMensagem.textContent.includes("Zerou")) {
+                     mensagemAlerta("🔄 Lista de palavras reiniciada!", "#f39c12");
+                }
+            }
+
+            // 2. Retirar uma palavra do Saco (Splice remove ela da array)
+            const itemSorteado = poolPalavrasRapido.splice(0, 1)[0];
+            
+            // 3. Configurar Jogo
+            palavraSecreta = itemSorteado.texto.toUpperCase();
+            
+            // Atualiza UI
+            campanhaCategoria.textContent = "CATEGORIA: " + itemSorteado.categoriaOriginal.toUpperCase();
+            campanhaTexto.textContent = "JOGO RÁPIDO (" + mod.toUpperCase() + ")";
+
+            iniciarRodada();
+        }
+
+        function voltarAoMenu() {
+            jogoAtivo = false;
+            estadoCampanha.ativo = false;
+            telaJogo.style.display = 'none';
+            telaMenu.style.display = 'flex';
+            statusMensagem.textContent = "";
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        // --- CAMPANHA (Lógica Mantida) ---
+        function configurarCampanha(modoString) {
+            estadoCampanha.ativo = true;
+            estadoCampanha.modo = modoString.replace('campanha_', '');
+            estadoCampanha.filaCategorias = embaralhar(Object.keys(bancoDados));
+            estadoCampanha.indiceFaseAtual = 0;
+            
+            painelCampanha.style.display = 'block';
+            barraContainer.style.display = 'block';
+            faseInfo.style.display = 'block';
+            campanhaContador.style.display = 'inline';
+            pulosInfo.style.display = (estadoCampanha.modo !== 'hardcore') ? 'block' : 'none';
+
+            if (estadoCampanha.modo === 'arcade') {
+                estadoCampanha.vidasRestantes = 3;
+                estadoCampanha.pulosRestantes = 5;
+                estadoCampanha.escudoAtivo = false;
+            } else if (estadoCampanha.modo === 'hardcore') {
+                estadoCampanha.vidasRestantes = 1;
+                estadoCampanha.pulosRestantes = 0;
+                estadoCampanha.escudoAtivo = true;
+            } else {
+                estadoCampanha.vidasRestantes = 999;
+                estadoCampanha.pulosRestantes = 999;
+                estadoCampanha.escudoAtivo = false;
+            }
+
+            campanhaTexto.textContent = "MODO " + estadoCampanha.modo.toUpperCase();
+            iniciarNovaFase();
+        }
+
+        function iniciarNovaFase() {
+            if (estadoCampanha.indiceFaseAtual >= estadoCampanha.filaCategorias.length) {
+                finalizarJogoGeral(true);
+                return;
+            }
+
+            const catAtual = estadoCampanha.filaCategorias[estadoCampanha.indiceFaseAtual];
+            estadoCampanha.indicePalavraAtual = 0;
+            estadoCampanha.filaPalavras = [];
+            estadoCampanha.nivelPalavraAtualObj = "";
+
+            if (estadoCampanha.indiceFaseAtual > 0) {
+                if (estadoCampanha.modo === 'arcade') {
+                    estadoCampanha.vidasRestantes = 3; 
+                    estadoCampanha.pulosRestantes += 2;
+                    mensagemAlerta("🌟 FASE CONCLUÍDA! Vidas recarregadas e +2 Pulos!", "#f1c40f");
+                } else if (estadoCampanha.modo === 'hardcore') {
+                    if (!estadoCampanha.escudoAtivo) {
+                        estadoCampanha.escudoAtivo = true;
+                        mensagemAlerta("🛡️ FASE CONCLUÍDA! Escudo regenerado!", "#3498db");
+                    } else {
+                        mensagemAlerta("🔥 FASE CONCLUÍDA! Seguindo jornada...", "#e74c3c");
+                    }
+                }
+            }
+
+            const dadosCat = bancoDados[catAtual];
+            let faceis = dadosCat.facil.map(p => ({texto: p, nivel: 'facil'}));
+            let medios = dadosCat.medio.map(p => ({texto: p, nivel: 'medio'}));
+            let dificeis = dadosCat.dificil.map(p => ({texto: p, nivel: 'dificil'}));
+            estadoCampanha.filaPalavras = [...embaralhar(faceis), ...embaralhar(medios), ...embaralhar(dificeis)];
+
+            campanhaCategoria.textContent = "CATEGORIA: " + catAtual.toUpperCase();
+            campanhaCategoria.classList.remove("animacao-alerta");
+            void campanhaCategoria.offsetWidth;
+            campanhaCategoria.classList.add("animacao-alerta");
+            setTimeout(() => campanhaCategoria.classList.remove("animacao-alerta"), 4000);
+
+            carregarPalavraCampanha();
+        }
+
+        function carregarPalavraCampanha() {
+            if (estadoCampanha.indicePalavraAtual >= estadoCampanha.filaPalavras.length) {
+                estadoCampanha.indiceFaseAtual++;
+                iniciarNovaFase();
+                return;
+            }
+            const proximoObjeto = estadoCampanha.filaPalavras[estadoCampanha.indicePalavraAtual];
+            estadoCampanha.nivelPalavraAtualObj = proximoObjeto.nivel;
+            palavraSecreta = proximoObjeto.texto.toUpperCase();
+            atualizarStatusCampanha();
+            iniciarRodada();
+        }
+
+        // --- RODADA ---
+        function iniciarRodada() {
+            letrasCorretas.clear();
+            letrasErradas.clear();
+            errosDaRodada = 0;
+            jogoAtivo = true;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            desenharForcaBase();
+            tecladoContainer.innerHTML = ''; 
+            gerarTeclado();
+            atualizarDisplays();
+            
+            // Botão Pular: Visível APENAS se for Campanha E não for Hardcore
+            if (estadoCampanha.ativo && estadoCampanha.modo !== 'hardcore') {
+                botaoPular.style.display = 'block';
+                botaoPular.disabled = (estadoCampanha.pulosRestantes <= 0);
+            } else {
+                botaoPular.style.display = 'none';
+            }
+            botaoAcao.style.display = 'none';
+            botaoAcao.classList.remove('btn-perdeu');
+        }
+
+        function processarTentativa(letra) {
+            if (!jogoAtivo) return;
+            letra = letra.toUpperCase();
+            if (letrasCorretas.has(letra) || letrasErradas.has(letra)) return;
+            
+            const palavraLimpa = removerAcentos(palavraSecreta);
+            if (palavraLimpa.includes(letra)) {
+                letrasCorretas.add(letra);
+            } else {
+                letrasErradas.add(letra);
+                errosDaRodada++;
+                desenharBoneco(errosDaRodada);
+            }
+            const btn = document.getElementById('btn-' + letra);
+            if (btn) btn.disabled = true;
+            atualizarDisplays();
+        }
+
+        function atualizarDisplays() {
+            let display = "";
+            let vitoria = true;
+            const palavraLimpa = removerAcentos(palavraSecreta);
+            for (let i = 0; i < palavraSecreta.length; i++) {
+                const l = palavraSecreta[i];
+                if (letrasCorretas.has(palavraLimpa[i])) display += l + " ";
+                else if (l === " " || l === "-") display += "- ";
+                else { display += "_ "; vitoria = false; }
+            }
+            palavraDisplay.textContent = display.trim();
+            letrasErradasDisplay.textContent = Array.from(letrasErradas).join(', ');
+            if (vitoria) processarFimRodada(true);
+            else if (errosDaRodada >= maxErrosPadrao) processarFimRodada(false);
+        }
+
+        function processarFimRodada(vitoria) {
+            jogoAtivo = false;
+            document.querySelectorAll('.letra-botao').forEach(btn => btn.disabled = true);
+            botaoPular.disabled = true;
+
+            // --- FIM DE RODADA JOGO RÁPIDO ---
+            if (!estadoCampanha.ativo) {
+                statusMensagem.textContent = vitoria ? "🏆 Venceu!" : `💀 Era: ${palavraSecreta}`;
+                statusMensagem.style.color = vitoria ? '#27ae60' : '#c0392b';
+                
+                // Se o "Saco" esvaziou, avisamos antes de reiniciar
+                if (poolPalavrasRapido.length === 0) {
+                     statusMensagem.innerHTML += "<br><span style='font-size:0.8em; color:#f39c12'>Você zerou a lista! Ela será reiniciada.</span>";
+                }
+
+                botaoAcao.textContent = "Jogar Novamente";
+                if(!vitoria) botaoAcao.classList.add('btn-perdeu');
+                
+                // Agora o botão chama a função inteligente que tira do saco
+                botaoAcao.onclick = sortearPalavraRapida;
+                
+                botaoAcao.style.display = 'block';
+                return;
+            }
+
+            // --- FIM DE RODADA CAMPANHA ---
+            if (vitoria) {
+                statusMensagem.textContent = "🌟 Correto!";
+                statusMensagem.style.color = '#27ae60';
+                botaoAcao.textContent = "Próxima >>";
+                estadoCampanha.indicePalavraAtual++; 
+                botaoAcao.onclick = carregarPalavraCampanha;
+            } else {
+                statusMensagem.textContent = `❌ Era: ${palavraSecreta}`;
+                statusMensagem.style.color = '#c0392b';
+                
+                if (estadoCampanha.modo === 'casual') {
+                    botaoAcao.textContent = "Tentar Novamente";
+                    botaoAcao.onclick = iniciarRodada;
+                } else if (estadoCampanha.modo === 'arcade') {
+                    estadoCampanha.vidasRestantes--;
+                    atualizarStatusCampanha();
+                    if (estadoCampanha.vidasRestantes <= 0) {
+                        finalizarJogoGeral(false);
+                        return;
+                    }
+                    botaoAcao.textContent = "Continuar (-1 Vida)";
+                    botaoAcao.classList.add('btn-perdeu');
+                    reciclarPalavra(); 
+                    botaoAcao.onclick = carregarPalavraCampanha;
+                } else if (estadoCampanha.modo === 'hardcore') {
+                    if (estadoCampanha.escudoAtivo) {
+                        estadoCampanha.escudoAtivo = false;
+                        atualizarStatusCampanha();
+                        statusMensagem.textContent = `🛡️ ESCUDO QUEBROU! Cuidado! (Era: ${palavraSecreta})`;
+                        statusMensagem.style.color = "#3498db";
+                        botaoAcao.textContent = "Continuar (Escudo Perdido)";
+                        reciclarPalavra();
+                        botaoAcao.onclick = carregarPalavraCampanha;
+                    } else {
+                        estadoCampanha.vidasRestantes = 0;
+                        atualizarStatusCampanha();
+                        finalizarJogoGeral(false);
+                        return;
+                    }
+                }
+            }
+            botaoAcao.style.display = 'block';
+            botaoAcao.focus();
+        }
+
+        function reciclarPalavra() {
+            const p = estadoCampanha.filaPalavras[estadoCampanha.indicePalavraAtual];
+            estadoCampanha.filaPalavras.splice(estadoCampanha.indicePalavraAtual, 1);
+            estadoCampanha.filaPalavras.push(p);
+        }
+
+        function pularPalavra() {
+            if (!jogoAtivo) return;
+            if (estadoCampanha.modo === 'arcade') {
+                if (estadoCampanha.pulosRestantes > 0) estadoCampanha.pulosRestantes--;
+                else return;
+            }
+            statusMensagem.textContent = "⏩ Pulou (Palavra movida para o final)";
+            statusMensagem.style.color = "#e67e22";
+            reciclarPalavra();
+            carregarPalavraCampanha();
+        }
+
+        function finalizarJogoGeral(venceu) {
+            jogoAtivo = false;
+            // No fim do jogo geral, escondemos o painel de novo para limpar a tela
+            painelCampanha.style.display = 'none';
+            botaoPular.style.display = 'none';
+            if (venceu) {
+                statusMensagem.innerHTML = "👑 <br>A JORNADA ESTÁ COMPLETA!<br>VOCÊ ZEROU O JOGO!";
+                statusMensagem.style.color = '#f1c40f';
+            } else {
+                statusMensagem.textContent = "💀 FIM DE JOGO (GAME OVER)";
+                statusMensagem.style.color = '#c0392b';
+            }
+            botaoAcao.textContent = "Voltar ao Menu Principal";
+            botaoAcao.classList.remove('btn-perdeu');
+            botaoAcao.style.display = 'block';
+            botaoAcao.onclick = voltarAoMenu;
+        }
+
+        function atualizarStatusCampanha() {
+            const totalP = estadoCampanha.filaPalavras.length;
+            campanhaContador.textContent = `${estadoCampanha.indicePalavraAtual} / ${totalP}`;
+            barraProgresso.style.width = `${(estadoCampanha.indicePalavraAtual / totalP) * 100}%`;
+            const totalF = estadoCampanha.filaCategorias.length;
+            faseInfo.textContent = `Fase ${estadoCampanha.indiceFaseAtual + 1}/${totalF}`;
+
+            let htmlVidas = "";
+            if (estadoCampanha.modo === 'casual') {
+                htmlVidas = "♾️";
+            } else {
+                for (let i = 0; i < estadoCampanha.vidasRestantes; i++) htmlVidas += "❤️";
+                if (estadoCampanha.modo === 'hardcore' && estadoCampanha.escudoAtivo) {
+                    htmlVidas += " 🛡️";
+                }
+            }
+            vidasContainer.innerHTML = htmlVidas;
+            if (estadoCampanha.modo !== 'hardcore') {
+                pulosInfo.style.display = 'block';
+                pulosValor.textContent = (estadoCampanha.modo === 'casual') ? "∞" : estadoCampanha.pulosRestantes;
+            } else {
+                pulosInfo.style.display = 'none';
+            }
+        }
+
+        function mensagemAlerta(texto, cor) {
+            statusMensagem.textContent = texto;
+            statusMensagem.style.color = cor;
+            setTimeout(() => { if(jogoAtivo && statusMensagem.textContent === texto) statusMensagem.textContent = ""; }, 3000);
+        }
+
+        function gerarTeclado() {
+            const alfabeto = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+            for (const letra of alfabeto) {
+                const btn = document.createElement('button');
+                btn.textContent = letra;
+                btn.id = 'btn-' + letra;
+                btn.className = 'letra-botao';
+                btn.onclick = () => processarTentativa(letra);
+                tecladoContainer.appendChild(btn);
+            }
+        }
+        function desenharForcaBase() {
+            ctx.strokeStyle = '#2c3e50'; ctx.lineWidth = 4; ctx.beginPath();
+            ctx.moveTo(20, 230); ctx.lineTo(180, 230);
+            ctx.moveTo(40, 230); ctx.lineTo(40, 20);
+            ctx.lineTo(140, 20); ctx.lineTo(140, 40);
+            ctx.stroke(); ctx.closePath();
+        }
+        function desenharBoneco(p) {
+            ctx.strokeStyle = '#c0392b'; ctx.lineWidth = 4; ctx.beginPath();
+            if(p===1) ctx.arc(140, 60, 20, 0, Math.PI*2);
+            if(p===2) { ctx.moveTo(140, 80); ctx.lineTo(140, 160); }
+            if(p===3) { ctx.moveTo(140, 90); ctx.lineTo(110, 130); }
+            if(p===4) { ctx.moveTo(140, 90); ctx.lineTo(170, 130); }
+            if(p===5) { ctx.moveTo(140, 160); ctx.lineTo(110, 200); }
+            if(p===6) { ctx.moveTo(140, 160); ctx.lineTo(170, 200); }
+            ctx.stroke(); ctx.closePath();
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (!jogoAtivo && e.key === 'Enter') {
+                if(telaMenu.style.display !== 'none') iniciarSetup();
+                else if(botaoAcao.style.display !== 'none') botaoAcao.click();
+                return;
+            }
+            if (jogoAtivo) {
+                const letra = e.key.toUpperCase();
+                if (/^[A-Z]$/.test(letra)) processarTentativa(letra);
+            }
+        });
+    </script>
+</body>
+</html>

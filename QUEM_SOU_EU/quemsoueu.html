@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Quem Sou Eu? 🤔</title>
+    
+    <script src="peerjs.min.js"></script>
+    
+    <style>
+        /* RESET E BASE */
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: #f0f2f5; color: #333; overflow-x: hidden; user-select: none; }
+        
+        .container { max-width: 600px; margin: 20px auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        
+        /* TELAS GERAIS */
+        .hidden { display: none !important; }
+        h1 { text-align: center; color: #6c5ce7; margin-bottom: 5px; }
+        
+        input { padding: 15px; margin: 10px 0; width: 100%; box-sizing: border-box; border: 2px solid #dfe6e9; border-radius: 8px; font-size: 18px; text-align: center; }
+        input:focus { border-color: #6c5ce7; outline: none; }
+
+        button { cursor: pointer; background-color: #6c5ce7; color: white; border: none; border-radius: 8px; font-weight: bold; padding: 15px; width: 100%; font-size: 18px; margin-top: 10px; transition: 0.2s; box-shadow: 0 4px 0 #4834d4; }
+        button:active { transform: translateY(4px); box-shadow: none; }
+        button:disabled { background-color: #b2bec3; box-shadow: none; color: #636e72; cursor: not-allowed; }
+
+        .player-list { list-style: none; padding: 0; }
+        .player-item { padding: 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; font-weight: bold; }
+        .status-ok { color: #00b894; }
+        .status-wait { color: #b2bec3; }
+
+        /* TELA DE JOGO (TESTA) */
+        #game-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: #0984e3; /* Azul padrão */
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            z-index: 1000; color: white; text-align: center;
+            transition: background-color 0.3s;
+        }
+
+        #display-word {
+            font-size: 15vw;
+            font-weight: 800;
+            line-height: 1.1;
+            text-shadow: 2px 2px 10px rgba(0,0,0,0.3);
+            padding: 20px;
+            word-wrap: break-word;
+        }
+
+        #game-screen.correct { background-color: #00b894 !important; }
+
+        #rotate-btn {
+            position: absolute; top: 20px; right: 20px; width: 50px; height: 50px;
+            background: rgba(0,0,0,0.3); border-radius: 50%; font-size: 24px;
+            display: flex; align-items: center; justify-content: center; padding: 0; margin: 0; box-shadow: none;
+        }
+
+        .rotated-text { transform: rotate(180deg); }
+
+        #countdown-layer {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #d63031; color: white; z-index: 2000;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+        }
+        #countdown-num { font-size: 8em; font-weight: bold; }
+
+        #status { text-align: center; color: #e17055; font-weight: bold; margin-bottom: 10px; }
+        .helper-text { font-size: 0.9em; opacity: 0.8; margin-top: 10px; }
+        
+        /* FIX DO ID BOX */
+        #host-info-box {
+            background: #f1f2f6; padding: 10px; margin-top: 15px; border-radius: 8px; text-align: center; border: 1px dashed #b2bec3;
+        }
+
+    </style>
+</head>
+<body>
+
+<div id="login-screen" class="container">
+    <h1>🤔 Quem Sou Eu?</h1>
+    <div id="status">⏳ Carregando sistema...</div>
+
+    <label>Seu Nickname:</label>
+    <input type="text" id="my-name" placeholder="Ex: Maria" maxlength="10">
+
+    <div style="margin-top:20px; border-top:1px solid #eee; padding-top:10px;">
+        <button id="btn-create" onclick="createGame()" disabled>👑 Criar Sala</button>
+        
+        <div id="host-info-box">
+            <p style="margin:0; font-size:0.8em; color:#636e72;">SEU ID (Para os amigos):</p>
+            <p id="my-id-display" style="font-family:monospace; font-size:1.2em; color:#636e72; font-weight:bold; margin:5px 0; word-break:break-all;">Gerando ID...</p>
+            <button onclick="copyId()" id="btn-copy" style="background:#b2bec3; font-size:0.9em; padding:8px; margin:0; width: auto;" disabled>📋 Copiar ID</button>
+        </div>
+    </div>
+
+    <div style="margin-top:20px;">
+        <input type="text" id="host-id" placeholder="Cole o ID da Sala aqui">
+        <button id="btn-join" onclick="joinGame()" style="background-color: #00b894;" disabled>Entrar na Sala</button>
+    </div>
+</div>
+
+<div id="lobby-screen" class="container hidden">
+    <h3>📝 Escreva o desafio</h3>
+    <p style="text-align:center; color:#636e72;">Escreva uma palavra para <b>outra pessoa</b> adivinhar.</p>
+    
+    <input type="text" id="word-input" placeholder="Ex: Capivara, Batman..." maxlength="20">
+    <button id="btn-send-word" onclick="submitWord()">🔒 Confirmar Palavra</button>
+    
+    <hr>
+    
+    <h4>Jogadores na Sala (<span id="player-count">0</span>)</h4>
+    <ul id="lobby-player-list" class="player-list"></ul>
+
+    <div id="host-controls" class="hidden" style="margin-top:20px; border-top:2px dashed #b2bec3; padding-top:10px;">
+        <p id="host-status-msg" style="text-align:center; color:#d63031;">Aguardando todos enviarem...</p>
+        <button id="btn-start-game" onclick="distributeAndStart()" disabled>🎲 SORTEAR E INICIAR</button>
+    </div>
+    
+    <p id="wait-msg" class="hidden" style="text-align:center; margin-top:10px; color:#0984e3;">Aguardando o Host iniciar...</p>
+</div>
+
+<div id="countdown-layer" class="hidden">
+    <h2>COLOQUE NA TESTA!</h2>
+    <div id="countdown-num">5</div>
+</div>
+
+<div id="game-screen" class="hidden" onclick="toggleCorrect()">
+    <button id="rotate-btn" onclick="event.stopPropagation(); toggleRotation()">🔄</button>
+    <div id="display-word">???</div>
+    <div class="helper-text">(Toque na tela se acertar)</div>
+    <div id="host-restart-area" class="hidden" style="position:absolute; bottom:20px; width:100%;">
+        <button onclick="event.stopPropagation(); backToLobby()" style="width:200px; background:white; color:#333; font-size:14px; box-shadow:none;">Nova Rodada</button>
+    </div>
+</div>
+
+<script>
+    // --- ÁUDIO (Simples) ---
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function beep(freq = 440, duration = 100, type = 'sine') {
+        try {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.value = freq;
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            gain.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + duration/1000);
+            osc.stop(audioCtx.currentTime + duration/1000);
+        } catch(e){}
+    }
+    function unlockAudio() { if(audioCtx.state === 'suspended') audioCtx.resume(); }
+
+    // --- VARIÁVEIS ---
+    let peer = null;
+    let myId = null;
+    let myName = "";
+    let isHost = false;
+    let connections = [];
+    let hostConn = null;
+    let players = {}; 
+    
+    // PeerJS Init
+    window.onload = function() {
+        if(typeof Peer === 'undefined') {
+            document.getElementById('status').innerText = "❌ ERRO: peerjs.min.js sumiu!";
+            return alert("ERRO: O arquivo peerjs.min.js precisa estar na mesma pasta.");
+        }
+        
+        peer = new Peer({ config: {'iceServers': [{ url: 'stun:stun.l.google.com:19302' }]} });
+        
+        peer.on('open', (id) => {
+            myId = id;
+            document.getElementById('status').innerText = "✅ Online";
+            document.getElementById('status').style.color = "#00b894";
+            
+            // ATUALIZA ID NA TELA
+            const idDisplay = document.getElementById('my-id-display');
+            idDisplay.innerText = id;
+            idDisplay.style.color = "#0984e3";
+            
+            // Habilita Botões
+            document.getElementById('btn-create').disabled = false;
+            document.getElementById('btn-join').disabled = false;
+            document.getElementById('btn-copy').disabled = false;
+            document.getElementById('btn-copy').style.backgroundColor = "#6c5ce7";
+            document.getElementById('btn-copy').style.color = "white";
+        });
+        
+        peer.on('connection', (conn) => {
+            if(isHost) handleHostConn(conn);
+            else conn.close();
+        });
+        
+        peer.on('error', (err) => {
+            alert("Erro Rede: " + err.type);
+            document.getElementById('status').innerText = "❌ Erro de Rede";
+        });
+    };
+
+    function safeSend(conn, data) { try { conn.send(data); } catch(e){} }
+
+    // --- HOST LOGIC ---
+    function createGame() {
+        unlockAudio();
+        myName = document.getElementById('my-name').value.trim();
+        if(!myName) return alert("Nome obrigatório");
+        
+        isHost = true;
+        players[myId] = { name: myName, wordInput: "", targetWord: "", submitted: false };
+        
+        document.getElementById('login-screen').classList.add('hidden');
+        document.getElementById('lobby-screen').classList.remove('hidden');
+        document.getElementById('host-controls').classList.remove('hidden');
+        updateLobbyUI();
+    }
+
+    function handleHostConn(conn) {
+        connections.push(conn);
+        conn.on('open', () => safeSend(conn, { type: 'REQ_NAME' }));
+        conn.on('data', (data) => {
+            if(data.type === 'JOIN_RESP') {
+                players[conn.peer] = { name: data.name, wordInput: "", targetWord: "", submitted: false };
+                broadcastLobby();
+            } else if (data.type === 'SUBMIT_WORD') {
+                if(players[conn.peer]) {
+                    players[conn.peer].wordInput = data.word;
+                    players[conn.peer].submitted = true;
+                    checkAllSubmitted();
+                    broadcastLobby(); 
+                }
+            }
+        });
+        conn.on('close', () => {
+            delete players[conn.peer];
+            connections = connections.filter(c => c.peer !== conn.peer);
+            broadcastLobby();
+        });
+    }
+
+    function broadcastLobby() {
+        const list = Object.keys(players).map(pid => ({ 
+            id: pid, name: players[pid].name, submitted: players[pid].submitted 
+        }));
+        const msg = { type: 'UPDATE_LOBBY', list: list };
+        connections.forEach(c => safeSend(c, msg));
+        updateLobbyUI();
+    }
+
+    function checkAllSubmitted() {
+        const allIds = Object.keys(players);
+        if(allIds.length < 2) {
+            document.getElementById('host-status-msg').innerText = "Mínimo 2 jogadores!";
+            document.getElementById('btn-start-game').disabled = true;
+            return;
+        }
+
+        const allOk = allIds.every(id => players[id].submitted);
+        const btn = document.getElementById('btn-start-game');
+        const msg = document.getElementById('host-status-msg');
+        
+        if(allOk) {
+            btn.disabled = false;
+            btn.style.backgroundColor = "#00b894";
+            btn.innerText = "🎲 SORTEAR E INICIAR";
+            msg.innerText = "Todos prontos!";
+            msg.style.color = "#00b894";
+        } else {
+            btn.disabled = true;
+            btn.style.backgroundColor = "#b2bec3";
+            msg.innerText = "Aguardando palavras...";
+            msg.style.color = "#d63031";
+        }
+    }
+
+    // --- SORTEIO ---
+    function distributeAndStart() {
+        const ids = Object.keys(players);
+        const words = ids.map(id => ({ author: id, text: players[id].wordInput }));
+        
+        let valid = false;
+        let attempts = 0;
+        let shuffledWords = [];
+
+        while(!valid && attempts < 1000) {
+            shuffledWords = [...words];
+            for (let i = shuffledWords.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffledWords[i], shuffledWords[j]] = [shuffledWords[j], shuffledWords[i]];
+            }
+            let collision = false;
+            for(let i=0; i < ids.length; i++) {
+                if(shuffledWords[i].author === ids[i]) {
+                    collision = true;
+                    break;
+                }
+            }
+            if(!collision) valid = true;
+            attempts++;
+        }
+
+        if(!valid) return alert("Erro matemático no sorteio (impossível não repetir). Tente novamente.");
+
+        ids.forEach((id, idx) => {
+            const wordObj = shuffledWords[idx];
+            players[id].targetWord = wordObj.text; 
+
+            if(id === myId) {
+                startMyGame(wordObj.text);
+            } else {
+                const conn = connections.find(c => c.peer === id);
+                safeSend(conn, { type: 'GAME_START', word: wordObj.text });
+            }
+        });
+    }
+    
+    function backToLobby() {
+        Object.keys(players).forEach(id => {
+            players[id].submitted = false;
+            players[id].wordInput = "";
+        });
+        connections.forEach(c => safeSend(c, { type: 'RESET_GAME' }));
+        resetLocalGameUI();
+        broadcastLobby();
+        checkAllSubmitted();
+    }
+
+    // --- CLIENTE ---
+    function joinGame() {
+        unlockAudio();
+        myName = document.getElementById('my-name').value.trim();
+        const hostId = document.getElementById('host-id').value.trim();
+        if(!myName || !hostId) return alert("Preencha tudo");
+
+        hostConn = peer.connect(hostId, { serialization: 'json' });
+        
+        hostConn.on('open', () => {
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('lobby-screen').classList.remove('hidden');
+            document.getElementById('wait-msg').classList.remove('hidden');
+        });
+
+        hostConn.on('data', (data) => {
+            if(data.type === 'REQ_NAME') {
+                safeSend(hostConn, { type: 'JOIN_RESP', name: myName });
+            } else if (data.type === 'UPDATE_LOBBY') {
+                renderLobbyList(data.list);
+            } else if (data.type === 'GAME_START') {
+                startMyGame(data.word);
+            } else if (data.type === 'RESET_GAME') {
+                resetLocalGameUI();
+            }
+        });
+        hostConn.on('close', () => alert("Desconectado do Host"));
+    }
+
+    function submitWord() {
+        const input = document.getElementById('word-input');
+        const val = input.value.trim().toUpperCase();
+        if(!val) return alert("Digite algo!");
+        
+        const btn = document.getElementById('btn-send-word');
+        btn.disabled = true;
+        btn.innerText = "Aguardando outros...";
+        input.disabled = true;
+
+        if(isHost) {
+            players[myId].wordInput = val;
+            players[myId].submitted = true;
+            checkAllSubmitted();
+            broadcastLobby();
+        } else {
+            safeSend(hostConn, { type: 'SUBMIT_WORD', word: val });
+        }
+    }
+
+    // --- UI ---
+    function updateLobbyUI() {
+        const list = Object.keys(players).map(id => ({ 
+            id: id, name: players[id].name, submitted: players[id].submitted 
+        }));
+        renderLobbyList(list);
+    }
+
+    function renderLobbyList(list) {
+        const ul = document.getElementById('lobby-player-list');
+        ul.innerHTML = "";
+        document.getElementById('player-count').innerText = list.length;
+        
+        list.forEach(p => {
+            const statusIcon = p.submitted ? "✅" : "⏳";
+            const statusClass = p.submitted ? "status-ok" : "status-wait";
+            ul.innerHTML += `<li class="player-item"><span>${p.name}</span><span class="${statusClass}">${statusIcon}</span></li>`;
+        });
+    }
+
+    function startMyGame(word) {
+        document.getElementById('lobby-screen').classList.add('hidden');
+        const countLayer = document.getElementById('countdown-layer');
+        const countNum = document.getElementById('countdown-num');
+        countLayer.classList.remove('hidden');
+        
+        let count = 5;
+        countNum.innerText = count;
+        
+        beep(600, 100, 'square');
+        setTimeout(() => beep(600, 100, 'square'), 200);
+
+        const interval = setInterval(() => {
+            count--;
+            countNum.innerText = count;
+            if(count > 0) beep(800, 50, 'sine');
+            
+            if(count <= 0) {
+                clearInterval(interval);
+                countLayer.classList.add('hidden');
+                const gameScreen = document.getElementById('game-screen');
+                gameScreen.classList.remove('hidden');
+                document.getElementById('display-word').innerText = word;
+                beep(1000, 400, 'triangle');
+                if(isHost) document.getElementById('host-restart-area').classList.remove('hidden');
+            }
+        }, 1000);
+    }
+
+    function toggleCorrect() {
+        const scr = document.getElementById('game-screen');
+        const display = document.getElementById('display-word');
+        
+        if(scr.classList.contains('correct')) {
+            scr.classList.remove('correct');
+            display.style.color = "white";
+        } else {
+            scr.classList.add('correct');
+            display.style.color = "#fff";
+            beep(1200, 100, 'sine');
+            setTimeout(() => beep(1500, 200, 'sine'), 150);
+        }
+    }
+
+    function toggleRotation() {
+        document.getElementById('display-word').classList.toggle('rotated-text');
+    }
+    
+    function resetLocalGameUI() {
+        document.getElementById('game-screen').classList.add('hidden');
+        document.getElementById('game-screen').classList.remove('correct');
+        document.getElementById('lobby-screen').classList.remove('hidden');
+        const input = document.getElementById('word-input');
+        const btn = document.getElementById('btn-send-word');
+        input.value = "";
+        input.disabled = false;
+        btn.disabled = false;
+        btn.innerText = "🔒 Confirmar Palavra";
+        btn.style.backgroundColor = "#6c5ce7";
+    }
+
+    function copyId() {
+        navigator.clipboard.writeText(myId).then(() => {
+            const btn = document.getElementById('btn-copy');
+            const original = btn.innerText;
+            btn.innerText = "Copiado!";
+            setTimeout(() => btn.innerText = original, 1000);
+        }).catch(()=>prompt("Copie:", myId));
+    }
+</script>
+</body>
+</html>

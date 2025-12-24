@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Polícia e Ladrão - CARTAS (V18 Fix)</title>
+    
+    <script src="peerjs.min.js"></script>
+    
+    <style>
+        /* --- ESTILO IDÊNTICO AO MODO DIGITAL --- */
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 10px; background-color: #2c3e50; color: #333; margin: 0; }
+        .container { max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); min-height: 90vh; display: flex; flex-direction: column; }
+        
+        h1 { font-size: 1.8em; margin-bottom: 5px; color: #2c3e50; text-align: center;}
+        h3 { text-align: center; margin-top: 0; }
+
+        .role-badge { padding: 10px; border-radius: 8px; font-weight: bold; text-align: center; color: white; margin-bottom: 15px; font-size: 1.2em; display: block;}
+        .role-unknown { background: #95a5a6; }
+        .role-policia { background: #2980b9; }
+        .role-ladrao { background: #c0392b; }
+        .role-vitima { background: #27ae60; }
+        .role-dead { background: #7f8c8d; }
+
+        .player-list { list-style: none; padding: 0; margin: 10px 0; }
+        .player-item { padding: 12px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; background: #fafafa; border-radius: 5px; margin-bottom: 5px;}
+        
+        input { padding: 10px; margin: 5px 0 15px 0; width: 100%; box-sizing: border-box; border: 1px solid #ccc; border-radius: 6px; font-size: 16px; }
+        button { cursor: pointer; background-color: #34495e; color: white; border: none; border-radius: 6px; font-weight: bold; padding: 12px; width: 100%; font-size: 16px; margin-top: 5px; transition: 0.2s; }
+        button:hover { background-color: #2c3e50; }
+        button:disabled { background-color: #bdc3c7; cursor: not-allowed; color: #7f8c8d; }
+        button.copy-btn { background-color: #7f8c8d; font-size: 0.9em; padding: 8px; margin-top: 5px; }
+
+        .hidden { display: none !important; }
+        .box { border: 1px solid #e1e1e1; padding: 15px; margin-top: 15px; border-radius: 8px; background-color: #fafafa; }
+        #status { font-weight: bold; color: #f39c12; text-align: center; margin-bottom: 10px; font-size: 0.9em; }
+
+        /* --- CARTAS (MODO PRESENCIAL) --- */
+        #game-screen { flex-grow: 1; display: flex; flex-direction: column; }
+        
+        #card-area { 
+            flex-grow: 1; display: flex; justify-content: center; align-items: center; 
+            perspective: 1000px; margin: 20px 0; min-height: 300px; 
+        }
+        
+        .card-container { 
+            width: 100%; max-width: 300px; aspect-ratio: 3/4; 
+            position: relative; transform-style: preserve-3d; transition: transform 0.8s; cursor: pointer;
+        }
+        
+        .card-container.flipped { transform: rotateY(180deg); }
+        
+        .card-face { 
+            position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 15px; 
+            display: flex; align-items: center; justify-content: center; border: 5px solid white; 
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3); background: white; overflow: hidden;
+        }
+        
+        .card-face img { width: 100%; height: 100%; object-fit: contain; padding: 5px; box-sizing: border-box; }
+        .card-back { transform: rotateY(180deg); background: #2c3e50; }
+        
+        #admin-panel { background: #fff3e0; border: 2px dashed #e67e22; padding: 10px; border-radius: 8px; text-align: center; margin-bottom: 10px; }
+        .admin-row { display: flex; gap: 10px; }
+        #winner-screen { background: #2c3e50; color: white; padding: 30px; border-radius: 12px; text-align: center; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🃏 Polícia e Ladrão</h1>
+    <div id="status">⏳ Iniciando Sistema...</div>
+
+    <div id="login-screen">
+        <label>Seu Nickname:</label>
+        <input type="text" id="my-name" placeholder="Ex: Detetive Silva">
+        
+        <div class="box">
+            <h4>👑 Criar Mesa (Host)</h4>
+            <button id="btn-create" onclick="createGame()" disabled>Criar Sala</button>
+            <div style="background:#eee; padding:10px; margin-top:10px; border-radius:4px;">
+                <p id="my-id-display" style="word-break:break-all; font-family:monospace; color:#2980b9; font-weight:bold; margin:0 0 5px 0;">...</p>
+                <button onclick="copyId()" class="copy-btn" id="btn-copy-action">📋 Copiar ID</button>
+            </div>
+        </div>
+
+        <div class="box">
+            <h4>Entrar na Mesa</h4>
+            <input type="text" id="host-id" placeholder="ID da Sala">
+            <button id="btn-join" onclick="joinGame()" style="background-color: #27ae60;" disabled>Conectar</button>
+        </div>
+    </div>
+
+    <div id="lobby-screen" class="hidden">
+        <h3>👥 Sala de Espera</h3>
+        <p style="text-align:center; font-size:0.9em; color:#7f8c8d;">Aguardando jogadores...</p>
+        <ul id="lobby-player-list" class="player-list"></ul>
+        <div id="host-controls" class="hidden">
+            <button id="btn-start" onclick="startGame()" disabled>DISTRIBUIR CARTAS 🃏</button>
+            <p id="lobby-msg" style="text-align:center; font-size:0.8em; color:red; display:none;">Precisa de 3+ jogadores!</p>
+        </div>
+        <p id="client-wait-msg" style="text-align:center; color:#666;" class="hidden">Aguardando Host iniciar...</p>
+    </div>
+
+    <div id="game-screen" class="hidden">
+        <div id="my-role-display" class="role-badge role-unknown">???</div>
+
+        <div id="admin-panel" class="hidden">
+            <small style="color:#d35400; font-weight:bold; display:block; margin-bottom:5px;">👮 CONTROLE MANUAL DO HOST</small>
+            <div class="admin-row">
+                <button onclick="endGame('POLICIA')" style="background:#2980b9; margin:0;">Polícia Ganhou</button>
+                <button onclick="endGame('LADRAO')" style="background:#c0392b; margin:0;">Ladrão Ganhou</button>
+            </div>
+        </div>
+
+        <p id="instruction-text" style="text-align:center; color:#7f8c8d; font-style:italic;">...</p>
+        <div id="card-area"></div>
+
+        <div id="surrender-area" class="hidden">
+            <button onclick="surrender()" style="background:#c0392b;">🏳️ Me Rendo / Fui Preso</button>
+        </div>
+    </div>
+
+    <div id="winner-screen" class="hidden">
+        <h1 id="winner-title">FIM DE JOGO</h1>
+        <p id="winner-desc" style="font-size:1.2em;"></p>
+        <hr style="border-color:#555;">
+        <h3>Revelação:</h3>
+        <ul id="winner-reveal-list" class="player-list" style="text-align:left; color:#333;"></ul>
+        
+        <div id="host-end-controls" class="hidden">
+            <button onclick="restartRound()" style="background:#27ae60; margin-bottom:10px;">🔄 Nova Rodada</button>
+            <button onclick="closeRoom()" style="background:#c0392b;">❌ Encerrar Sala</button>
+        </div>
+        
+        <div id="client-end-controls" class="hidden">
+            <p style="color:#bdc3c7;">Aguardando Host...</p>
+            <button onclick="location.reload()" style="background:#7f8c8d;">Sair</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const sounds = { tiro: new Audio('tiro.mp3'), sirene: new Audio('sirene.mp3'), mensagem: new Audio('mensagem.mp3') };
+    function unlockAudio() { Object.values(sounds).forEach(s => { s.muted=true; s.play().catch(e=>{}); s.pause(); s.currentTime=0; s.muted=false; }); }
+    function playSound(name) { if(sounds[name]) sounds[name].play().catch(e=>{}); }
+
+    let peer, myId, myName, isHost=false, myRole='', isDead=false;
+    let players = {}; let connections = []; let hostConn = null;
+
+    window.onload = function() {
+        if (typeof Peer === 'undefined') return alert("Erro: peerjs.min.js faltando.");
+        peer = new Peer({ config: {'iceServers': [{ url: 'stun:stun.l.google.com:19302' }]} });
+        peer.on('open', id => { 
+            myId=id; 
+            document.getElementById('status').innerText='✅ Sistema Pronto'; 
+            document.getElementById('status').style.color='green';
+            document.getElementById('my-id-display').innerText=id; 
+            document.getElementById('btn-create').disabled=false; 
+            document.getElementById('btn-join').disabled=false; 
+        });
+        peer.on('connection', conn => { if(isHost) handleHostConnection(conn); else conn.close(); });
+    };
+
+    function safeSend(conn, data) { try { conn.send(data); } catch(e) {} }
+
+    // --- HOST ---
+    function createGame() {
+        unlockAudio();
+        myName = document.getElementById('my-name').value;
+        if (!myName) return alert("Digite seu nome.");
+        isHost = true;
+        players[myId] = { name: myName, role: '', status: 'ALIVE' };
+        updateLobbyUI();
+        toScreen('lobby-screen');
+        document.getElementById('host-controls').classList.remove('hidden');
+    }
+
+    function handleHostConnection(conn) {
+        connections.push(conn);
+        conn.on('open', () => safeSend(conn, { type: 'REQUEST_NAME' }));
+        conn.on('data', (data) => {
+            if (data.type === 'JOIN_RESPONSE') {
+                players[conn.peer] = { name: data.name, role: '', status: 'ALIVE' };
+                broadcastLobbyUpdate();
+            }
+            if (data.type === 'SELF_DIE') processDeath(conn.peer);
+            if (data.type === 'SURRENDER') endGame('POLICIA');
+        });
+        conn.on('close', () => { delete players[conn.peer]; connections=connections.filter(c=>c.peer!==conn.peer); broadcastLobbyUpdate(); });
+    }
+
+    function broadcastLobbyUpdate() {
+        const list = Object.keys(players).map(id => ({ id: id, name: players[id].name }));
+        broadcast({ type: 'LOBBY_UPDATE', list: list });
+        updateLobbyUI();
+        const count = Object.keys(players).length;
+        document.getElementById('btn-start').disabled = (count < 3);
+        document.getElementById('lobby-msg').style.display = (count < 3) ? 'block' : 'none';
+    }
+
+    function startGame() {
+        const ids = Object.keys(players);
+        if (ids.length < 3) return alert("Mínimo 3 jogadores!");
+        ids.forEach(id => players[id].status = 'ALIVE');
+        let roles = ['POLICIA', 'LADRAO'];
+        for (let i = 2; i < ids.length; i++) roles.push('VITIMA');
+        for (let i = roles.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [roles[i], roles[j]] = [roles[j], roles[i]]; }
+
+        ids.forEach((id, index) => {
+            players[id].role = roles[index];
+            if (id === myId) { myRole = players[id].role; setupGameUI(); }
+            else { 
+                const conn = connections.find(c => c.peer === id);
+                safeSend(conn, { type: 'GAME_START', role: players[id].role }); 
+            }
+        });
+    }
+
+    function processDeath(id) {
+        if(players[id].status === 'DEAD') return;
+        players[id].status = 'DEAD';
+        playSound('tiro'); broadcast({ type: 'PLAY_SOUND', sound: 'tiro' });
+        const victims = Object.values(players).filter(p => p.role === 'VITIMA');
+        if(victims.every(p => p.status === 'DEAD') && victims.length > 0) endGame('LADRAO');
+    }
+
+    // --- CORREÇÃO DO FIM DE JOGO (V18) ---
+    function endGame(winnerKey) {
+        let title = '', desc = '';
+        
+        // Verifica se a string contem POLICIA (ex: 'POLICIA_WINS_ARREST' ou só 'POLICIA')
+        if (winnerKey && winnerKey.includes('POLICIA')) {
+             title = 'VITÓRIA DA POLÍCIA 👮';
+             desc = 'A lei venceu o crime!';
+        } else {
+             title = 'VITÓRIA DO LADRÃO 🦹';
+             desc = 'O Ladrão eliminou todos.';
+        }
+
+        const data = { type: 'GAME_OVER', winnerTitle: title, winnerDesc: desc, allPlayers: players };
+        broadcast(data);
+        showWinnerScreen(title, desc, players);
+    }
+
+    function restartRound() {
+        broadcast({ type: 'RESET_ROUND' });
+        resetLocalState();
+        toScreen('lobby-screen');
+        if(isHost) document.getElementById('host-controls').classList.remove('hidden');
+    }
+
+    function broadcast(msg) { connections.forEach(c => safeSend(c, msg)); }
+    function closeRoom() { broadcast({ type: 'ROOM_CLOSED' }); location.reload(); }
+
+    // --- CLIENTE (CORREÇÃO CONEXÃO JSON) ---
+    function joinGame() {
+        unlockAudio();
+        myName = document.getElementById('my-name').value;
+        const hostId = document.getElementById('host-id').value;
+        if (!myName || !hostId) return alert("Dados incompletos.");
+        
+        // --- FIX: Forçar serialização JSON para evitar dados corrompidos ---
+        hostConn = peer.connect(hostId, { serialization: 'json' });
+        
+        hostConn.on('open', () => { 
+            document.getElementById('status').innerText='✅ Conectado'; 
+            toScreen('lobby-screen'); 
+            document.getElementById('client-wait-msg').classList.remove('hidden');
+        });
+        hostConn.on('data', (data) => {
+            switch (data.type) {
+                case 'REQUEST_NAME': safeSend(hostConn, { type: 'JOIN_RESPONSE', name: myName }); break;
+                case 'LOBBY_UPDATE': updateLobbyClient(data.list); break;
+                case 'GAME_START': 
+                    resetLocalState();
+                    myRole = data.role; 
+                    setupGameUI(); 
+                    break;
+                case 'PLAY_SOUND': playSound(data.sound); break;
+                case 'GAME_OVER': showWinnerScreen(data.winnerTitle, data.winnerDesc, data.allPlayers); break;
+                case 'RESET_ROUND': resetLocalState(); toScreen('lobby-screen'); document.getElementById('client-wait-msg').classList.remove('hidden'); break;
+                case 'ROOM_CLOSED': location.reload(); break;
+            }
+        });
+    }
+
+    function updateLobbyUI() {
+        const list = document.getElementById('lobby-player-list'); list.innerHTML = "";
+        Object.values(players).forEach(p => list.innerHTML += `<li class="player-item">👤 ${p.name}</li>`);
+    }
+    function updateLobbyClient(list) {
+        const listEl = document.getElementById('lobby-player-list'); listEl.innerHTML = "";
+        list.forEach(p => listEl.innerHTML += `<li class="player-item">👤 ${p.name}</li>`);
+    }
+
+    // --- UI ---
+    function setupGameUI() {
+        toScreen('game-screen');
+        if(isHost) document.getElementById('admin-panel').classList.remove('hidden');
+        else document.getElementById('admin-panel').classList.add('hidden');
+
+        const roleDisplay = document.getElementById('my-role-display');
+        const area = document.getElementById('card-area');
+        const inst = document.getElementById('instruction-text');
+        const surr = document.getElementById('surrender-area');
+        area.innerHTML = ''; surr.classList.add('hidden');
+        roleDisplay.innerText = "VOCÊ É: " + myRole;
+        roleDisplay.className = "role-badge role-" + myRole.toLowerCase();
+
+        if (myRole === 'POLICIA') {
+            inst.innerText = "Mostre o distintivo para dar voz de prisão.";
+            area.innerHTML = `<div class="card-container"><div class="card-face"><img src="distintivo.png" onclick="playSound('sirene')"></div></div>`;
+        } else if (myRole === 'LADRAO') {
+            inst.innerText = "Pisque discretamente para eliminar as vítimas.";
+            area.innerHTML = `<div class="card-container"><div class="card-face"><img src="ladrao.png"></div></div>`;
+            surr.classList.remove('hidden');
+        } else {
+            inst.innerText = "Fique atento. Se o Ladrão piscar, toque na carta.";
+            area.innerHTML = `<div class="card-container" id="v-card" onclick="flipCard()"><div class="card-face"><img src="vitima_viva.png"></div><div class="card-face card-back"><img src="Vitima_morta.png"></div></div>`;
+        }
+    }
+
+    function flipCard() {
+        if(isDead) return;
+        if(!confirm("O Ladrão piscou para você? Confirmar morte?")) return;
+        isDead = true; document.getElementById('v-card').classList.add('flipped');
+        document.getElementById('my-role-display').innerText = "VOCÊ MORREU 💀";
+        document.getElementById('my-role-display').classList.add('role-dead');
+        if(isHost) processDeath(myId); else safeSend(hostConn, { type: 'SELF_DIE' });
+    }
+
+    function surrender() {
+        if(!confirm("Foi preso? Confirmar derrota?")) return;
+        if(isHost) endGame('POLICIA'); else safeSend(hostConn, { type: 'SURRENDER' });
+    }
+
+    // --- REVELAÇÃO (CORRIGIDA) ---
+    function showWinnerScreen(title, desc, allPlayers) {
+        toScreen('winner-screen');
+        
+        // Proteção contra undefined
+        document.getElementById('winner-title').innerText = title || "FIM DE JOGO";
+        document.getElementById('winner-desc').innerText = desc || "Rodada encerrada";
+        
+        const list = document.getElementById('winner-reveal-list');
+        list.innerHTML = "";
+        
+        if (!allPlayers) return; // Evita erro se lista vier vazia
+
+        Object.values(allPlayers).forEach(p => {
+            let roleIcon = '❓';
+            if(p.role === 'POLICIA') roleIcon = '👮';
+            if(p.role === 'LADRAO') roleIcon = '🦹';
+            if(p.role === 'VITIMA') roleIcon = '🙍';
+            let statusStr = p.status === 'DEAD' ? '(Morto 💀)' : '';
+            
+            list.innerHTML += `<li class="player-item" style="background:white; border-bottom:1px solid #ccc;">
+                <strong>${p.name}</strong>
+                <span>${roleIcon} ${p.role} ${statusStr}</span>
+            </li>`;
+        });
+
+        if (isHost) {
+            document.getElementById('host-end-controls').classList.remove('hidden');
+            document.getElementById('client-end-controls').classList.add('hidden');
+        } else {
+            document.getElementById('host-end-controls').classList.add('hidden');
+            document.getElementById('client-end-controls').classList.remove('hidden');
+        }
+    }
+
+    function toScreen(id) {
+        ['login-screen','lobby-screen','game-screen','winner-screen'].forEach(s => document.getElementById(s).classList.add('hidden'));
+        document.getElementById(id).classList.remove('hidden');
+    }
+    
+    function resetLocalState() {
+        isDead = false;
+        document.getElementById('my-role-display').classList.remove('role-dead');
+    }
+
+    function copyId() {
+        if(!myId) return;
+        const ta = document.createElement("textarea");
+        ta.value = myId; ta.style.position="fixed"; ta.style.left="-9999px";
+        document.body.appendChild(ta); ta.focus(); ta.select();
+        try { document.execCommand('copy'); 
+              const btn = document.getElementById('btn-copy-action');
+              btn.innerText = "Copiado! ✅"; setTimeout(()=>btn.innerText="📋 Copiar ID", 2000);
+        } catch (e) { prompt("Copie:", myId); }
+        document.body.removeChild(ta);
+    }
+</script>
+</body>
+</html>

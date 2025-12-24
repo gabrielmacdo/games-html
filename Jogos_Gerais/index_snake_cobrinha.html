@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jogo da Cobrinha Responsivo (Canvas)</title>
+    <style>
+        /* Estilos Globais e Centralização (Mantidos) */
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px 10px;
+            font-family: 'Arial', sans-serif;
+            background-color: #2c3e50; 
+            color: #ecf0f1;
+        }
+
+        h1 {
+            color: #3498db;
+            margin-bottom: 10px;
+        }
+        
+        #score-board {
+            font-size: 1.2em;
+            margin-bottom: 15px;
+            font-weight: bold;
+            color: #f1c40f; 
+        }
+
+        /* Canvas do Jogo (Mantido) */
+        canvas {
+            width: 90vw; 
+            max-width: 400px; 
+            border: 5px solid #3498db;
+            background-color: #1e2a36; 
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            touch-action: none; 
+        }
+        
+        /* Controles (Mantidos) */
+        #main-controls {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+            width: 90vw;
+            max-width: 400px;
+            justify-content: center;
+        }
+
+        .control-btn {
+            padding: 10px 20px;
+            font-size: 1em;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            font-weight: bold;
+        }
+
+        #start-new-game-btn {
+            background-color: #2ecc71; 
+            color: white;
+        }
+
+        #pause-resume-btn {
+            background-color: #f39c12; 
+            color: white;
+            display: none; 
+        }
+        
+        /* Controles de Toque (Mantidos) */
+        #touch-controls {
+            margin-top: 20px;
+            width: 100%;
+            max-width: 300px; 
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 5px;
+        }
+        .dir-btn {
+            padding: 12px 0;
+            background-color: #34495e;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 1.1em;
+            cursor: pointer;
+        }
+        #up-btn { grid-area: 1 / 2 / 2 / 3; }
+        #left-btn { grid-area: 2 / 1 / 3 / 2; }
+        #right-btn { grid-area: 2 / 3 / 3 / 4; }
+        #down-btn { grid-area: 3 / 2 / 4 / 3; }
+        
+        /* Tela de Sobreposição (Mantida) */
+        #message-overlay {
+            position: fixed; 
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5em;
+            text-align: center;
+            visibility: hidden; 
+            z-index: 10;
+        }
+        #overlay-content {
+            padding: 20px;
+            border-radius: 10px;
+            background-color: rgba(0, 0, 0, 0.6);
+        }
+    </style>
+</head>
+<body>
+    <h1>Jogo da Cobrinha</h1>
+    <div id="score-board">Pontuação: <span id="score">0</span></div>
+    
+    <canvas id="gameCanvas"></canvas>
+    
+    <div id="main-controls">
+        <button id="start-new-game-btn" onclick="startNewGame()">Iniciar Novo Jogo</button>
+        <button id="pause-resume-btn" onclick="togglePause()">Pausar</button>
+    </div>
+
+    <div id="message-overlay">
+        <div id="overlay-content">
+            </div>
+    </div>
+
+    <div id="touch-controls">
+        <button id="up-btn" class="dir-btn" data-direction="UP">▲</button>
+        <button id="left-btn" class="dir-btn" data-direction="LEFT">◀</button>
+        <button id="right-btn" class="dir-btn" data-direction="RIGHT">►</button>
+        <button id="down-btn" class="dir-btn" data-direction="DOWN">▼</button>
+    </div>
+
+    <script>
+        // --- Elementos DOM (Mantidos) ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreElement = document.getElementById('score');
+        const overlay = document.getElementById('message-overlay');
+        const overlayContent = document.getElementById('overlay-content');
+        const startNewGameButton = document.getElementById('start-new-game-btn');
+        const pauseResumeButton = document.getElementById('pause-resume-btn');
+
+        // --- Configurações do Jogo (ATUALIZADAS) ---
+        const GRID_SIZE = 20; 
+        let TILE_SIZE;      
+        
+        const INITIAL_SPEED = 250; // Velocidade Inicial mais lenta (ms)
+        const SPEED_INCREASE_RATE = 15; // Valor (ms) a subtrair do intervalo a cada ponto
+        const MAX_SPEED = 50; // Velocidade Máxima (menor intervalo, mais rápido)
+
+        let currentSpeed = INITIAL_SPEED; // Velocidade que será atualizada
+        let gameLoopId;
+        
+        // Estado do Jogo (Mantidos)
+        let snake = [];
+        let food = {};
+        let dx = 1; 
+        let dy = 0;
+        let score = 0;
+        let isPaused = true;
+        let changingDirection = false; 
+
+        // --- 1. Funções de Setup e Responsividade ---
+
+        function resizeGame() {
+            const canvasRect = canvas.getBoundingClientRect();
+            const realSize = Math.min(canvasRect.width, window.innerWidth * 0.9);
+
+            canvas.width = realSize;
+            canvas.height = realSize;
+            
+            TILE_SIZE = canvas.width / GRID_SIZE;
+            
+            if (snake.length > 0) {
+                 draw();
+            }
+        }
+
+        function initializeGame() {
+            snake = [{ x: Math.floor(GRID_SIZE / 2), y: Math.floor(GRID_SIZE / 2) }];
+            dx = 1;
+            dy = 0;
+            score = 0;
+            currentSpeed = INITIAL_SPEED; // Redefine a velocidade
+            scoreElement.textContent = score;
+            placeFood();
+            
+            draw(); 
+        }
+        
+        // NOVO: Função para (re)iniciar o loop do jogo com a velocidade atual
+        function startLoop() {
+             gameLoopId = setInterval(gameTick, currentSpeed);
+        }
+
+        function showWelcomeMessage() {
+            startNewGameButton.textContent = 'Iniciar Novo Jogo';
+            pauseResumeButton.style.display = 'none';
+            updateOverlay(
+                "Bem-vindo ao Snake!", 
+                "Use as **setas do teclado** ou os **controles abaixo** para mover. Clique no botão verde **'Iniciar Novo Jogo'**."
+            );
+        }
+
+        function startNewGame() {
+            clearInterval(gameLoopId);
+            resizeGame(); 
+            initializeGame();
+            
+            overlay.style.visibility = 'hidden'; 
+            isPaused = false;
+            startNewGameButton.textContent = 'Reiniciar Jogo';
+            pauseResumeButton.style.display = 'inline-block';
+            pauseResumeButton.textContent = 'Pausar';
+            
+            startLoop(); // Usa a velocidade inicial
+        }
+        
+        function togglePause() {
+            if (isPaused) {
+                isPaused = false;
+                pauseResumeButton.textContent = 'Pausar';
+                startLoop(); // Reinicia com a velocidade atual
+            } else {
+                clearInterval(gameLoopId);
+                isPaused = true;
+                pauseResumeButton.textContent = 'Continuar';
+            }
+        }
+
+        function gameOver(message) {
+            clearInterval(gameLoopId);
+            isPaused = true;
+            
+            startNewGameButton.textContent = 'Jogar Novamente';
+            pauseResumeButton.style.display = 'none';
+            
+            updateOverlay(
+                "GAME OVER! 😱", 
+                `${message}<br>Pontuação Final: ${score}. Clique em **Jogar Novamente**!`,
+                true 
+            );
+            
+            draw();
+        }
+
+        function updateOverlay(title, message) {
+            overlayContent.innerHTML = `
+                <h2>${title}</h2>
+                <p>${message}</p>
+                <p>O overlay desaparecerá em 3 segundos. Clique rápido!</p>
+            `;
+
+            overlay.style.visibility = 'visible';
+            isPaused = true;
+            
+            setTimeout(() => {
+                if (isPaused) { 
+                    overlay.style.visibility = 'hidden';
+                }
+            }, 3000); 
+        }
+
+        // --- 2. Lógica do Jogo (GameTick) ---
+
+        function placeFood() {
+            let newFood;
+            do {
+                newFood = {
+                    x: Math.floor(Math.random() * GRID_SIZE),
+                    y: Math.floor(Math.random() * GRID_SIZE)
+                };
+            } while (snake.some(segment => segment.x === newFood.x && segment.y === newFood.y));
+
+            food = newFood;
+        }
+
+        function gameTick() {
+            if (isPaused) return;
+
+            changingDirection = false; 
+            
+            const head = { x: snake[0].x + dx, y: snake[0].y + dy };
+
+            if (isCollision(head)) {
+                gameOver("Você colidiu com a parede ou consigo mesmo!");
+                return;
+            }
+
+            snake.unshift(head);
+
+            if (head.x === food.x && head.y === food.y) {
+                score++;
+                scoreElement.textContent = score;
+                placeFood(); 
+                
+                // --- LÓGICA DE DIFICULDADE ATUALIZADA ---
+                if (currentSpeed > MAX_SPEED) {
+                    // Reduz o intervalo de tempo (acelera o jogo)
+                    currentSpeed -= SPEED_INCREASE_RATE; 
+                    
+                    // Reinicia o loop com a nova velocidade
+                    clearInterval(gameLoopId);
+                    startLoop();
+                }
+                // ----------------------------------------
+
+            } else {
+                snake.pop(); 
+            }
+
+            draw();
+        }
+
+        function isCollision(head) {
+            const hitWall = head.x < 0 || head.x >= GRID_SIZE || head.y < 0 || head.y >= GRID_SIZE;
+            const hitSelf = snake.slice(1).some(segment => segment.x === head.x && segment.y === head.y);
+            return hitWall || hitSelf;
+        }
+
+
+        // --- 3. Funções de Desenho (Mantidas) ---
+
+        function drawTile(x, y, color) {
+            ctx.fillStyle = color;
+            ctx.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+            
+            ctx.strokeStyle = '#1e2a36'; 
+            ctx.strokeRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+        }
+
+        function draw() {
+            ctx.fillStyle = '#1e2a36';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            drawTile(food.x, food.y, '#e74c3c'); 
+
+            for (let i = 0; i < snake.length; i++) {
+                const color = (i === 0) ? '#2ecc71' : '#27ae60'; 
+                drawTile(snake[i].x, snake[i].y, color);
+            }
+        }
+
+
+        // --- 4. Controles de Movimento (Mantidos) ---
+
+        function changeDirection(newDx, newDy) {
+            if (changingDirection || isPaused) return; 
+
+            const goingUp = dy === -1;
+            const goingDown = dy === 1;
+            const goingRight = dx === 1;
+            const goingLeft = dx === -1;
+
+            if (newDx === -1 && !goingRight) { dx = newDx; dy = 0; changingDirection = true; } 
+            else if (newDx === 1 && !goingLeft) { dx = newDx; dy = 0; changingDirection = true; } 
+            else if (newDy === -1 && !goingDown) { dx = 0; dy = newDy; changingDirection = true; } 
+            else if (newDy === 1 && !goingUp) { dx = 0; dy = newDy; changingDirection = true; } 
+        }
+
+        document.addEventListener('keydown', (event) => {
+            if (isPaused && event.key !== ' ' && event.key !== 'Enter') return; 
+
+            switch (event.key) {
+                case 'ArrowLeft': changeDirection(-1, 0); break;
+                case 'ArrowRight': changeDirection(1, 0); break;
+                case 'ArrowUp': changeDirection(0, -1); break;
+                case 'ArrowDown': changeDirection(0, 1); break;
+                case ' ': 
+                case 'Enter': 
+                    if (snake.length > 0 && overlay.style.visibility !== 'visible') { 
+                        togglePause();
+                    }
+                    break;
+            }
+        });
+
+        document.getElementById('touch-controls').addEventListener('click', (event) => {
+            if (isPaused || !event.target.classList.contains('dir-btn')) return;
+
+            const direction = event.target.dataset.direction;
+            switch (direction) {
+                case 'LEFT': changeDirection(-1, 0); break;
+                case 'RIGHT': changeDirection(1, 0); break;
+                case 'UP': changeDirection(0, -1); break;
+                case 'DOWN': changeDirection(0, 1); break;
+            }
+        });
+
+
+        // --- 5. Event Listeners e Início (Mantidos) ---
+
+        window.onload = () => {
+             resizeGame();
+             initializeGame();
+             showWelcomeMessage(); 
+        };
+        window.addEventListener('resize', resizeGame); 
+    </script>
+</body>
+</html>

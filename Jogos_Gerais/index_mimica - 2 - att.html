@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jogo de Adivinhação de Palavras</title>
+    
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f9; color: #333; }
+        h1 { color: #0056b3; text-align: center; }
+        .config, .game, .scoreboard { 
+            margin-bottom: 25px; 
+            padding: 20px; 
+            border: 1px solid #ddd; 
+            border-radius: 8px; 
+            background-color: #ffffff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input[type="number"] { 
+            padding: 10px; 
+            width: 100%; 
+            box-sizing: border-box; 
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .config button { 
+            background-color: #28a745; 
+            color: white; 
+            border: none;
+            padding: 12px 20px;
+            cursor: pointer;
+            border-radius: 4px;
+            width: 100%;
+            font-size: 1.1em;
+            transition: background-color 0.3s;
+        }
+        .config button:hover { background-color: #218838; }
+
+        .player-turn { font-size: 1.1em; margin-top: 10px; padding: 10px; background-color: #e9f7ff; border-radius: 4px; }
+        .current-word { 
+            font-size: 1.8em; 
+            font-weight: bold; 
+            margin: 20px 0; 
+            padding: 15px; 
+            text-align: center; 
+            border: 2px dashed #007bff; 
+            border-radius: 5px;
+            background-color: #f0f8ff;
+        }
+        .game button {
+            padding: 15px;
+            font-size: 1.1em;
+            margin: 5px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 48%; /* Para ficarem lado a lado em desktop */
+        }
+        .game button:first-child { background-color: #007bff; color: white; }
+        .game button:first-child:hover { background-color: #0056b3; }
+        .game button:last-child { background-color: #dc3545; color: white; }
+        .game button:last-child:hover { background-color: #c82333; }
+
+        .scoreboard h2 { color: #6f42c1; }
+        .score-item { 
+            padding: 10px; 
+            margin-bottom: 8px; 
+            border-bottom: 1px solid #eee;
+            font-size: 1.1em;
+        }
+        .scoreboard button {
+            background-color: #6c757d;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+        .scoreboard button:hover { background-color: #5a6268; }
+
+        /* Estilo Responsivo para Celular */
+        @media (max-width: 600px) {
+            body { margin: 10px; }
+            .game button {
+                width: 100%; /* Botões de Adivinhação ocupam a largura total em telas pequenas */
+                margin: 5px 0;
+            }
+            .current-word { font-size: 1.5em; }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Jogo de Adivinhação de Palavras</h1>
+
+    <div class="config" id="config-section">
+        <h2>Configurações Iniciais</h2>
+        
+        <label for="num-players">Número de Jogadores/Times (1 a 4):</label>
+        <input type="number" id="num-players" min="1" max="4" value="2">
+        
+        <label for="num-rounds">Número de Rodadas (5 a 15):</label>
+        <input type="number" id="num-rounds" min="5" max="15" value="10">
+        
+        <button onclick="startGame()">Iniciar Jogo</button>
+    </div>
+
+    <div class="game" id="game-section" style="display: none;">
+        <h2>Rodada Atual: <span id="current-round">0</span></h2>
+        
+        <div class="player-turn">
+            Vez do Jogador/Time: <span id="current-player"></span>
+        </div>
+
+        <div class="current-word">
+            Palavra Sorteada: <span id="word-display"></span>
+        </div>
+        
+        <button onclick="markGuess(true)">Acertou (Ganha 1 ponto)</button>
+        <button onclick="markGuess(false)">Errou (Nenhum ponto)</button>
+    </div>
+
+    <div class="scoreboard" id="scoreboard-section" style="display: none;">
+        <h2>Placar Final 🏆</h2>
+        <div id="final-scores">
+            </div>
+        <button onclick="location.reload()">Novo Jogo</button>
+    </div>
+
+    <script>
+        // Banco de palavras categorizadas (fonte)
+        const wordBankSource = {
+            'Ações/Verbos': [
+                'Comer', 'Beber', 'Falar', 'Dormir', 'Andar', 'Correr', 'Cozinhar', 'Escrever', 'Ler', 'Cantar',
+                'Dançar', 'Pular', 'Jogar', 'Buscar', 'Encontrar', 'Pensar', 'Trabalhar', 'Ajudar', 'Estudar', 'Viajar',
+                'Abrir', 'Fechar', 'Esquecer', 'Lembrar', 'Construir', 'Destruir', 'Lavar', 'Secar', 'Comprar', 'Vender',
+                'Sentir', 'Oferecer', 'Receber', 'Chamar', 'Discutir', 'Pintar', 'Assinar', 'Avisar', 'Caminhar', 'Consertar',
+                'Desligar', 'Convidar', 'Respirar', 'Aprovar', 'Negar', 'Ganhar', 'Perder', 'Mudar', 'Agradecer', 'Cumprir'
+            ],
+            'Animais': [
+                'Leão', 'Tigre', 'Elefante', 'Girafa', 'Zebra', 'Hipopótamo', 'Rinoceronte', 'Cachorro', 'Gato', 'Coelho',
+                'Pato', 'Galinha', 'Cavalo', 'Vaca', 'Ovelha', 'Porco', 'Urso', 'Raposa', 'Lobo', 'Cervo',
+                'Macaco', 'Chimpanzé', 'Gorila', 'Pássaro', 'Águia', 'Falcão', 'Coruja', 'Pinguim', 'Golfinho', 'Baleia',
+                'Tubarão', 'Polvo', 'Caranguejo', 'Tartaruga', 'Cobra', 'Lagarto', 'Crocodilo', 'Sapo', 'Rã', 'Borboleta',
+                'Abelha', 'Formiga', 'Aranha', 'Mosquito', 'Escorpião', 'Camelo', 'Lhama', 'Canguru', 'Panda', 'Esquilo'
+            ],
+            'Objetos': [
+                'Cadeira', 'Mesa', 'Sofá', 'Armário', 'Cama', 'Espelho', 'Geladeira', 'Fogão', 'Microondas', 'Liquidificador',
+                'Televisão', 'Controle Remoto', 'Telefone', 'Computador', 'Mouse', 'Teclado', 'Monitor', 'Impressora', 'Lâmpada', 'Vaso',
+                'Panela', 'Talher', 'Prato', 'Copo', 'Garrafa', 'Caneta', 'Lápis', 'Caderno', 'Livro', 'Mochila',
+                'Relógio', 'Óculos', 'Chave', 'Carteira', 'Guarda-chuva', 'Ventilador', 'Aquecedor', 'Tapete', 'Cortina', 'Quadro',
+                'Martelo', 'Chave de Fenda', 'Serra', 'Tesoura', 'Alfinete', 'Corda', 'Bola', 'Bicicleta', 'Pneu', 'Escada'
+            ],
+            'Profissões': [
+                'Médico', 'Professor', 'Engenheiro', 'Advogado', 'Cientista', 'Programador', 'Designer', 'Arquiteto', 'Jornalista', 'Contador',
+                'Eletricista', 'Mecânico', 'Padeiro', 'Cozinheiro', 'Pintor', 'Enfermeiro', 'Vendedor', 'Motorista', 'Dentista', 'Bombeiro'
+            ],
+            // Você pode adicionar mais palavras aqui para Personagens Históricos, etc.
+            'Personagens Históricos': ['Santos Dumont', 'Cleópatra', 'Tiradentes', 'Mozart', 'Gandhi', 'Einstein', 'Marie Curie', 'Julio Cesar']
+        };
+
+        let availableWords = {}; 
+        let numPlayers = 0;
+        let numRounds = 0;
+        let scores = [];
+        let currentRound = 0;
+        let currentPlayerIndex = 0; 
+        let wordsDrawnInRound = 0;
+        let totalWordsPerRound = 0; 
+
+        // Elementos do DOM
+        const configSection = document.getElementById('config-section');
+        const gameSection = document.getElementById('game-section');
+        const scoreboardSection = document.getElementById('scoreboard-section');
+        const wordDisplay = document.getElementById('word-display');
+        const currentPlayerDisplay = document.getElementById('current-player');
+        const currentRoundDisplay = document.getElementById('current-round');
+        const finalScoresDisplay = document.getElementById('final-scores');
+
+        /**
+         * Inicia o jogo, pegando as configurações e inicializando o estado.
+         */
+        function startGame() {
+            numPlayers = parseInt(document.getElementById('num-players').value);
+            numRounds = parseInt(document.getElementById('num-rounds').value);
+
+            if (numPlayers < 1 || numPlayers > 4 || numRounds < 5 || numRounds > 15) {
+                alert("Por favor, selecione um número válido de jogadores (1-4) e rodadas (5-15).");
+                return;
+            }
+            
+            // Inicializa o banco de palavras disponíveis (Deep Copy)
+            availableWords = JSON.parse(JSON.stringify(wordBankSource));
+
+            const totalWordsNeeded = numPlayers * numRounds;
+            const totalWordsAvailable = Object.values(availableWords).flat().length;
+
+            if (totalWordsNeeded > totalWordsAvailable) {
+                alert(`Atenção: Você precisa de ${totalWordsNeeded} palavras, mas só há ${totalWordsAvailable} disponíveis. Reduza as rodadas ou jogadores!`);
+                return;
+            }
+
+            scores = Array(numPlayers).fill(0).map((_, i) => ({
+                name: `Jogador ${i + 1}`,
+                score: 0
+            }));
+
+            totalWordsPerRound = numPlayers;
+            currentRound = 1;
+            currentPlayerIndex = 0;
+            wordsDrawnInRound = 0;
+
+            configSection.style.display = 'none';
+            gameSection.style.display = 'block';
+
+            startNextTurn();
+        }
+
+        /**
+         * Sorteia uma palavra aleatória de uma categoria aleatória e A REMOVE do banco.
+         */
+        function drawWord() {
+            // Filtra categorias que ainda possuem palavras
+            const categories = Object.keys(availableWords).filter(key => availableWords[key].length > 0);
+            
+            if (categories.length === 0) {
+                return "FIM DE PALAVRAS!";
+            }
+
+            // 1. Sorteia a Categoria
+            const randomCategoryKey = categories[Math.floor(Math.random() * categories.length)];
+            let categoryWords = availableWords[randomCategoryKey];
+            
+            // 2. Sorteia o índice e a Palavra
+            const randomIndex = Math.floor(Math.random() * categoryWords.length);
+            const randomWord = categoryWords[randomIndex];
+            
+            // 3. REMOVE a palavra sorteada do array da categoria
+            categoryWords.splice(randomIndex, 1);
+            
+            return `${randomWord} (Categoria: ${randomCategoryKey})`;
+        }
+
+        /**
+         * Inicia o turno de um jogador/time: sorteia uma palavra e atualiza o display.
+         */
+        function startNextTurn() {
+            if (currentRound > numRounds) {
+                endGame();
+                return;
+            }
+
+            currentRoundDisplay.textContent = currentRound;
+            const currentPlayer = scores[currentPlayerIndex];
+            currentPlayerDisplay.textContent = currentPlayer.name;
+            
+            const wordResult = drawWord();
+            
+            if (wordResult === "FIM DE PALAVRAS!") {
+                alert("O jogo encerrou por falta de palavras disponíveis!");
+                endGame();
+                return;
+            }
+
+            wordDisplay.textContent = wordResult;
+        }
+
+        /**
+         * Marca o resultado da adivinhação do jogador atual e avança para o próximo turno.
+         */
+        function markGuess(guessedCorrectly) {
+            if (currentRound > numRounds) {
+                return;
+            }
+
+            if (guessedCorrectly) {
+                scores[currentPlayerIndex].score += 1;
+                // Alerta removido para um fluxo de jogo mais rápido.
+            }
+
+            // Passa para o próximo jogador
+            currentPlayerIndex = (currentPlayerIndex + 1) % numPlayers;
+            wordsDrawnInRound++;
+
+            // Verifica se a rodada atual terminou
+            if (wordsDrawnInRound >= totalWordsPerRound) {
+                currentRound++;
+                wordsDrawnInRound = 0;
+            }
+
+            startNextTurn();
+        }
+
+        /**
+         * Encerra o jogo e exibe o placar final.
+         */
+        function endGame() {
+            gameSection.style.display = 'none';
+            scoreboardSection.style.display = 'block';
+
+            const sortedScores = [...scores].sort((a, b) => b.score - a.score);
+
+            finalScoresDisplay.innerHTML = sortedScores.map((player, index) => 
+                `<div class="score-item">
+                    <strong>${index + 1}º Lugar - ${player.name}</strong>: ${player.score} pontos
+                </div>`
+            ).join('');
+        }
+    </script>
+</body>
+</html>
