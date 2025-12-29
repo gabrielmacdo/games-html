@@ -160,7 +160,30 @@
     let connections = [];
     let hostConn = null;
     let players = {}; 
+	let gameActive = false; // Variável para controlar se o jogo começou
+	
+	
+	// ESCUTA A TENTATIVA DE SAIR OU RECARREGAR
+	window.addEventListener('beforeunload', function (e) {
+		if (gameActive) {
+			// Padrão para navegadores modernos (Chrome, Firefox, Safari)
+			e.preventDefault(); 
+			e.returnValue = ''; 
+			return ''; 
+		}
+	});
     
+	//GUARDA DO BOTÃO VOLTAR
+	// Esse código fica vigiando se o usuário aperta "Voltar"
+	window.addEventListener('popstate', function (event) {
+		if (gameActive) {
+			// Se o jogo estiver ativo, a gente "empurra" o usuário de volta para a página atual
+			history.pushState(null, document.title, location.href);
+			// E mostra um aviso
+			alert("⚠️ Cuidado! Se você voltar, vai desconectar do jogo.");
+		}
+	});
+	
     // PeerJS Init com Retry Seguro
     window.onload = function() {
         // Pequeno atraso para garantir que o script de fallback carregou se necessário
@@ -211,7 +234,10 @@
         unlockAudio();
         myName = document.getElementById('my-name').value.trim();
         if(!myName) return alert("Nome obrigatório");
-        
+		
+        gameActive = true;
+		history.pushState(null, document.title, location.href);
+		
         isHost = true;
         players[myId] = { name: myName, wordInput: "", targetWord: "", submitted: false };
         
@@ -341,9 +367,11 @@
         hostConn = peer.connect(hostId, { serialization: 'json' });
         
         hostConn.on('open', () => {
+			gameActive = true;
+			history.pushState(null, document.title, location.href);
             document.getElementById('login-screen').classList.add('hidden');
             document.getElementById('lobby-screen').classList.remove('hidden');
-            document.getElementById('wait-msg').classList.remove('hidden');
+            document.getElementById('wait-msg').classList.remove('hidden');			
         });
 
         hostConn.on('data', (data) => {
