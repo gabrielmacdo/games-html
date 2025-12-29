@@ -433,6 +433,27 @@
         inputs.forEach(input => input.disabled = true);
         renderAnswersList(inputs);
         playSound();
+		
+		const saveBtn = document.querySelector('.save-btn');
+        const textoOriginal = "Gravar Pontos 💾";
+        
+        saveBtn.disabled = true; // Trava o botão
+        saveBtn.style.backgroundColor = "#999"; // Deixa cinza
+        saveBtn.innerText = "Revise suas respostas... (3)"; // Conta regressiva visual
+        
+        let contagem = 3;
+        const intervalo = setInterval(() => {
+            contagem--;
+            if(contagem > 0) {
+                saveBtn.innerText = `Revise suas respostas... (${contagem})`;
+            } else {
+                clearInterval(intervalo);
+                saveBtn.disabled = false; // Destrava
+                saveBtn.style.backgroundColor = "#28a745"; // Volta a cor verde
+                saveBtn.innerText = textoOriginal;
+            }
+        }, 1000);
+		
     }
 
     function renderAnswersList(inputs) {
@@ -472,6 +493,12 @@
     }
 
     function submitRoundPoints() {
+		const confirmacao = confirm("⚠️ CONFIRMAÇÃO:\n\nVocê revisou se marcou 5 ou 10 pontos nas respostas corretas?\n\nClique em OK para salvar.");
+        
+        if (!confirmacao) {
+            return; // Se clicar em cancelar, para tudo e não envia.
+        }
+		
         document.getElementById('wait-modal').style.display = 'flex';
         
         const roundSum = currentRoundScores.reduce((a,b)=>a+b, 0);
