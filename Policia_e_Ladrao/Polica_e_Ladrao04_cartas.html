@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Polícia e Ladrão - CARTAS (V18 Fix)</title>
+    <title>Polícia e Ladrão - CARTAS</title>
     
     <script src="peerjs.min.js"></script>
     
@@ -75,7 +75,7 @@
         <input type="text" id="my-name" placeholder="Ex: Detetive Silva">
         
         <div class="box">
-            <h4>👑 Criar Mesa (Host)</h4>
+            <h4>👑 Criar Sala (Host)</h4>
             <button id="btn-create" onclick="createGame()" disabled>Criar Sala</button>
             <div style="background:#eee; padding:10px; margin-top:10px; border-radius:4px;">
                 <p id="my-id-display" style="word-break:break-all; font-family:monospace; color:#2980b9; font-weight:bold; margin:0 0 5px 0;">...</p>
@@ -84,7 +84,7 @@
         </div>
 
         <div class="box">
-            <h4>Entrar na Mesa</h4>
+            <h4>Entrar na Sala</h4>
             <input type="text" id="host-id" placeholder="ID da Sala">
             <button id="btn-join" onclick="joinGame()" style="background-color: #27ae60;" disabled>Conectar</button>
         </div>
@@ -316,7 +316,7 @@
             surr.classList.remove('hidden');
         } else {
             inst.innerText = "Fique atento. Se o Ladrão piscar, toque na carta.";
-            area.innerHTML = `<div class="card-container" id="v-card" onclick="flipCard()"><div class="card-face"><img src="vitima_viva.png"></div><div class="card-face card-back"><img src="Vitima_morta.png"></div></div>`;
+            area.innerHTML = `<div class="card-container" id="v-card" onclick="flipCard()"><div class="card-face"><img src="vitima_viva.png"></div><div class="card-face card-back"><img src="vitima_morta.png"></div></div>`;
         }
     }
 
