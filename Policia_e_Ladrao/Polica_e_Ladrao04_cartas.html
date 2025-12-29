@@ -390,6 +390,24 @@
         } catch (e) { prompt("Copie:", myId); }
         document.body.removeChild(ta);
     }
+	// --- PROTEÇÃO CONTRA RELOAD ACIDENTAL ---
+    window.addEventListener('beforeunload', function (e) {
+        // Só pergunta se o jogador estiver conectado (Host ou Cliente)
+        // hostConn é usado pelo Cliente
+        // connections.length > 0 indica que o Host tem gente na sala
+        // isHost garante que o Host não saia sem querer mesmo sozinho
+        
+        const isConnected = (hostConn && hostConn.open) || (isHost && myId);
+
+        if (isConnected) {
+            // Padrão para navegadores modernos
+            e.preventDefault(); 
+            // Padrão antigo (Chrome/Chromium)
+            e.returnValue = ''; 
+            return '';
+        }
+    });
+	
 </script>
 </body>
 </html>
