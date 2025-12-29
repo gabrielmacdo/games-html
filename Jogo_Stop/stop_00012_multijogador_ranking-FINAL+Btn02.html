@@ -118,9 +118,10 @@
         <label>🎨 Cor:</label> <input type="text" class="game-input" autocomplete="off">
         <label>🍎 Fruta:</label> <input type="text" class="game-input" autocomplete="off">
         <label>👷 Profissão:</label> <input type="text" class="game-input" autocomplete="off">
-		<label>👷 Parte do Corpo Humano:</label> <input type="text" class="game-input" autocomplete="off">
+		<label>💪 Parte do Corpo Humano:</label> <input type="text" class="game-input" autocomplete="off">
         <label>🔨 Objeto:</label> <input type="text" class="game-input" autocomplete="off">
         <label>🎬 Filme / Série:</label> <input type="text" class="game-input" autocomplete="off">
+		<label>🚗 Carros(Marcas/Modelos):</label> <input type="text" class="game-input" autocomplete="off">
         <label>👵 Minha Sogra é:</label> <input type="text" class="game-input" autocomplete="off">
 
         <br>
@@ -158,6 +159,12 @@
     let myName = "";
     let isHost = false;
     let winningScore = 200;
+	
+	// --- PROTEÇÃO CONTRA RELOAD ACIDENTAL ---
+    window.onbeforeunload = function() {
+        // Retornar qualquer string ativa a confirmação do navegador
+        return "Se você recarregar, perderá a conexão com o jogo!";
+    };
     
     // Arrays para lógica
     let connections = []; 
