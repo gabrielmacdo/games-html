@@ -2,313 +2,609 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jogo de Adivinhação de Palavras</title>
-    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mímica Master</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f9; color: #333; }
-        h1 { color: #0056b3; text-align: center; }
-        .config, .game, .scoreboard { 
-            margin-bottom: 25px; 
-            padding: 20px; 
-            border: 1px solid #ddd; 
-            border-radius: 8px; 
-            background-color: #ffffff;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        /* --- CSS VARIABLES & RESET --- */
+        :root {
+            --primary: #6366f1; /* Indigo */
+            --primary-dark: #4338ca;
+            --secondary: #ec4899; /* Pink */
+            --success: #22c55e; /* Green */
+            --warning: #f59e0b; /* Amber */
+            --danger: #ef4444; /* Red */
+            --background: #f8fafc;
+            --surface: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.1);
+            --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1);
+            --radius: 16px;
         }
-        label { display: block; margin-bottom: 5px; font-weight: bold; }
-        input[type="number"] { 
-            padding: 10px; 
-            width: 100%; 
-            box-sizing: border-box; 
-            margin-bottom: 10px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+
+        body {
+            background-color: var(--background);
+            color: var(--text-main);
+            height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
         }
-        .config button { 
-            background-color: #28a745; 
-            color: white; 
-            border: none;
-            padding: 12px 20px;
-            cursor: pointer;
-            border-radius: 4px;
+
+        /* --- LAYOUT --- */
+        .app-container {
             width: 100%;
-            font-size: 1.1em;
-            transition: background-color 0.3s;
+            max-width: 600px;
+            margin: 0 auto;
+            height: 100%;
+            position: relative;
+            display: flex;
+            flex-direction: column;
         }
-        .config button:hover { background-color: #218838; }
 
-        .player-turn { font-size: 1.1em; margin-top: 10px; padding: 10px; background-color: #e9f7ff; border-radius: 4px; }
-        .current-word { 
-            font-size: 1.8em; 
-            font-weight: bold; 
-            margin: 20px 0; 
-            padding: 15px; 
-            text-align: center; 
-            border: 2px dashed #007bff; 
-            border-radius: 5px;
-            background-color: #f0f8ff;
+        .screen {
+            flex: 1;
+            display: none;
+            flex-direction: column;
+            padding: 24px;
+            animation: fadeIn 0.3s ease-in-out;
+            overflow-y: auto;
         }
-        .game button {
-            padding: 15px;
-            font-size: 1.1em;
-            margin: 5px;
+
+        .screen.active { display: flex; }
+
+        /* --- COMPONENTS --- */
+        h1 { font-size: 1.8rem; color: var(--primary); text-align: center; margin-bottom: 20px; font-weight: 800; }
+        h2 { font-size: 1.4rem; margin-bottom: 15px; color: var(--text-main); }
+        .label { font-size: 0.9rem; color: var(--text-muted); font-weight: 600; margin-bottom: 8px; display: block; }
+        
+        .card {
+            background: var(--surface);
+            border-radius: var(--radius);
+            padding: 24px;
+            box-shadow: var(--shadow-md);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .input-group { margin-bottom: 20px; text-align: left; }
+        
+        select, input[type="number"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        select:focus, input:focus { border-color: var(--primary); }
+
+        .btn {
+            width: 100%;
+            padding: 16px;
             border: none;
-            border-radius: 4px;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 700;
             cursor: pointer;
-            width: 48%; /* Para ficarem lado a lado em desktop */
+            transition: transform 0.1s, opacity 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
         }
-        .game button:first-child { background-color: #007bff; color: white; }
-        .game button:first-child:hover { background-color: #0056b3; }
-        .game button:last-child { background-color: #dc3545; color: white; }
-        .game button:last-child:hover { background-color: #c82333; }
+        .btn:active { transform: scale(0.98); }
+        .btn-primary { background: var(--primary); color: white; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3); }
+        .btn-success { background: var(--success); color: white; }
+        .btn-warning { background: var(--warning); color: white; }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-outline { background: transparent; border: 2px solid var(--text-muted); color: var(--text-muted); }
 
-        .scoreboard h2 { color: #6f42c1; }
-        .score-item { 
-            padding: 10px; 
-            margin-bottom: 8px; 
-            border-bottom: 1px solid #eee;
-            font-size: 1.1em;
+        /* --- GAME HEADER --- */
+        .game-header {
+            display: flex;
+            flex-direction: column;
+            padding: 10px 0;
+            margin-bottom: 10px;
         }
-        .scoreboard button {
-            background-color: #6c757d;
-            color: white;
-            padding: 10px 15px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            margin-top: 15px;
-        }
-        .scoreboard button:hover { background-color: #5a6268; }
+        .header-top { display: flex; justify-content: space-between; align-items: center; width: 100%; }
+        .header-sub { display: flex; justify-content: space-between; width: 100%; font-size: 0.85rem; color: var(--text-muted); margin-top: 5px; }
 
-        /* Estilo Responsivo para Celular */
-        @media (max-width: 600px) {
-            body { margin: 10px; }
-            .game button {
-                width: 100%; /* Botões de Adivinhação ocupam a largura total em telas pequenas */
-                margin: 5px 0;
-            }
-            .current-word { font-size: 1.5em; }
+        /* --- TIMER --- */
+        .timer-wrapper { margin-bottom: 30px; }
+        .timer-info { display: flex; justify-content: flex-end; margin-bottom: 5px; }
+        .timer-display {
+            font-family: 'Courier New', monospace;
+            font-weight: 900; font-size: 1.2rem; color: var(--text-muted); transition: color 0.3s;
         }
+        .timer-display.critical { color: var(--danger); animation: pulse-red 1s infinite; }
+        .timer-bar-container { width: 100%; height: 10px; background: #e2e8f0; border-radius: 5px; overflow: hidden; }
+        .timer-bar { height: 100%; background: var(--primary); width: 100%; transition: width 1s linear, background-color 0.3s; }
+
+        /* --- WORD CARD --- */
+        .word-card {
+            flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center;
+            background: #fff; border: 2px dashed #e2e8f0; border-radius: var(--radius);
+            margin: 10px 0 30px 0; position: relative; transition: border-color 0.3s;
+        }
+        .category-tag {
+            background: var(--text-muted); color: white; padding: 6px 16px; border-radius: 20px;
+            font-size: 0.9rem; font-weight: bold; position: absolute; top: -16px;
+            text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .tag-facil { background-color: var(--success); }
+        .tag-medio { background-color: var(--warning); }
+        .tag-dificil { background-color: var(--danger); }
+        .the-word { font-size: 2.5rem; font-weight: 900; color: var(--text-main); line-height: 1.2; word-break: break-word; padding: 20px; }
+
+        .controls-area { display: grid; grid-template-columns: 1fr 2fr; gap: 12px; }
+
+        /* --- ANIMATIONS --- */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .shake { animation: shake 0.5s; }
+        @keyframes shake { 0% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } 100% { transform: translateX(0); } }
+        @keyframes pulse-red { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.6; transform: scale(1.1); } 100% { opacity: 1; transform: scale(1); } }
+
+        /* --- SCOREBOARD --- */
+        .score-list { list-style: none; }
+        .score-item {
+            display: flex; justify-content: space-between; padding: 16px;
+            background: white; margin-bottom: 10px; border-radius: 12px;
+            border-left: 5px solid var(--primary); box-shadow: var(--shadow-sm);
+        }
+        .winner-badge { background: #fcd34d; color: #78350f; padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; margin-left: 10px; }
     </style>
 </head>
 <body>
 
-    <h1>Jogo de Adivinhação de Palavras</h1>
-
-    <div class="config" id="config-section">
-        <h2>Configurações Iniciais</h2>
+<div class="app-container">
+    
+    <section id="screen-config" class="screen active">
+        <h1>🎭 Mímica Master</h1>
         
-        <label for="num-players">Número de Jogadores/Times (1 a 4):</label>
-        <input type="number" id="num-players" min="1" max="4" value="2">
-        
-        <label for="num-rounds">Número de Rodadas (5 a 15):</label>
-        <input type="number" id="num-rounds" min="5" max="15" value="10">
-        
-        <button onclick="startGame()">Iniciar Jogo</button>
-    </div>
-
-    <div class="game" id="game-section" style="display: none;">
-        <h2>Rodada Atual: <span id="current-round">0</span></h2>
-        
-        <div class="player-turn">
-            Vez do Jogador/Time: <span id="current-player"></span>
-        </div>
-
-        <div class="current-word">
-            Palavra Sorteada: <span id="word-display"></span>
-        </div>
-        
-        <button onclick="markGuess(true)">Acertou (Ganha 1 ponto)</button>
-        <button onclick="markGuess(false)">Errou (Nenhum ponto)</button>
-    </div>
-
-    <div class="scoreboard" id="scoreboard-section" style="display: none;">
-        <h2>Placar Final 🏆</h2>
-        <div id="final-scores">
+        <div class="card">
+            <div class="input-group">
+                <label class="label">Meta de Pontos para Vencer</label>
+                <input type="number" id="config-target" value="30" min="0" step="5" placeholder="0 para Modo Infinito">
+                <small style="color: var(--text-muted); font-size: 0.8rem;">Deixe 0 para jogar sem limite.</small>
             </div>
-        <button onclick="location.reload()">Novo Jogo</button>
-    </div>
 
-    <script>
-        // Banco de palavras categorizadas (fonte)
-        const wordBankSource = {
-            'Ações/Verbos': [
-                'Comer', 'Beber', 'Falar', 'Dormir', 'Andar', 'Correr', 'Cozinhar', 'Escrever', 'Ler', 'Cantar',
-                'Dançar', 'Pular', 'Jogar', 'Buscar', 'Encontrar', 'Pensar', 'Trabalhar', 'Ajudar', 'Estudar', 'Viajar',
-                'Abrir', 'Fechar', 'Esquecer', 'Lembrar', 'Construir', 'Destruir', 'Lavar', 'Secar', 'Comprar', 'Vender',
-                'Sentir', 'Oferecer', 'Receber', 'Chamar', 'Discutir', 'Pintar', 'Assinar', 'Avisar', 'Caminhar', 'Consertar',
-                'Desligar', 'Convidar', 'Respirar', 'Aprovar', 'Negar', 'Ganhar', 'Perder', 'Mudar', 'Agradecer', 'Cumprir'
-            ],
-            'Animais': [
-                'Leão', 'Tigre', 'Elefante', 'Girafa', 'Zebra', 'Hipopótamo', 'Rinoceronte', 'Cachorro', 'Gato', 'Coelho',
-                'Pato', 'Galinha', 'Cavalo', 'Vaca', 'Ovelha', 'Porco', 'Urso', 'Raposa', 'Lobo', 'Cervo',
-                'Macaco', 'Chimpanzé', 'Gorila', 'Pássaro', 'Águia', 'Falcão', 'Coruja', 'Pinguim', 'Golfinho', 'Baleia',
-                'Tubarão', 'Polvo', 'Caranguejo', 'Tartaruga', 'Cobra', 'Lagarto', 'Crocodilo', 'Sapo', 'Rã', 'Borboleta',
-                'Abelha', 'Formiga', 'Aranha', 'Mosquito', 'Escorpião', 'Camelo', 'Lhama', 'Canguru', 'Panda', 'Esquilo'
-            ],
-            'Objetos': [
-                'Cadeira', 'Mesa', 'Sofá', 'Armário', 'Cama', 'Espelho', 'Geladeira', 'Fogão', 'Microondas', 'Liquidificador',
-                'Televisão', 'Controle Remoto', 'Telefone', 'Computador', 'Mouse', 'Teclado', 'Monitor', 'Impressora', 'Lâmpada', 'Vaso',
-                'Panela', 'Talher', 'Prato', 'Copo', 'Garrafa', 'Caneta', 'Lápis', 'Caderno', 'Livro', 'Mochila',
-                'Relógio', 'Óculos', 'Chave', 'Carteira', 'Guarda-chuva', 'Ventilador', 'Aquecedor', 'Tapete', 'Cortina', 'Quadro',
-                'Martelo', 'Chave de Fenda', 'Serra', 'Tesoura', 'Alfinete', 'Corda', 'Bola', 'Bicicleta', 'Pneu', 'Escada'
-            ],
-            'Profissões': [
-                'Médico', 'Professor', 'Engenheiro', 'Advogado', 'Cientista', 'Programador', 'Designer', 'Arquiteto', 'Jornalista', 'Contador',
-                'Eletricista', 'Mecânico', 'Padeiro', 'Cozinheiro', 'Pintor', 'Enfermeiro', 'Vendedor', 'Motorista', 'Dentista', 'Bombeiro'
-            ],
-            // Você pode adicionar mais palavras aqui para Personagens Históricos, etc.
-            'Personagens Históricos': ['Santos Dumont', 'Cleópatra', 'Tiradentes', 'Mozart', 'Gandhi', 'Einstein', 'Marie Curie', 'Julio Cesar']
-        };
+            <div class="input-group">
+                <label class="label">Dificuldade do Baralho</label>
+                <select id="config-difficulty">
+                    <option value="misto">Misto (Todas)</option>
+                    <option value="facil">Só Fáceis (Verde)</option>
+                    <option value="medio">Só Médias (Laranja)</option>
+                    <option value="dificil">Só Difíceis (Vermelho)</option>
+                </select>
+            </div>
 
-        let availableWords = {}; 
-        let numPlayers = 0;
-        let numRounds = 0;
-        let scores = [];
-        let currentRound = 0;
-        let currentPlayerIndex = 0; 
-        let wordsDrawnInRound = 0;
-        let totalWordsPerRound = 0; 
+            <div class="input-group">
+                <label class="label">Número de Times</label>
+                <select id="config-teams">
+                    <option value="2">2 Times</option>
+                    <option value="3">3 Times</option>
+                    <option value="4">4 Times</option>
+                </select>
+            </div>
 
-        // Elementos do DOM
-        const configSection = document.getElementById('config-section');
-        const gameSection = document.getElementById('game-section');
-        const scoreboardSection = document.getElementById('scoreboard-section');
-        const wordDisplay = document.getElementById('word-display');
-        const currentPlayerDisplay = document.getElementById('current-player');
-        const currentRoundDisplay = document.getElementById('current-round');
-        const finalScoresDisplay = document.getElementById('final-scores');
+            <div class="input-group">
+                <label class="label">Tempo por Rodada (segundos)</label>
+                <input type="number" id="config-timer" value="60" min="10" max="300">
+            </div>
+        </div>
 
-        /**
-         * Inicia o jogo, pegando as configurações e inicializando o estado.
-         */
-        function startGame() {
-            numPlayers = parseInt(document.getElementById('num-players').value);
-            numRounds = parseInt(document.getElementById('num-rounds').value);
+        <button class="btn btn-primary" onclick="GameApp.initGame()">
+            INICIAR JOGO
+        </button>
+    </section>
 
-            if (numPlayers < 1 || numPlayers > 4 || numRounds < 5 || numRounds > 15) {
-                alert("Por favor, selecione um número válido de jogadores (1-4) e rodadas (5-15).");
-                return;
-            }
-            
-            // Inicializa o banco de palavras disponíveis (Deep Copy)
-            availableWords = JSON.parse(JSON.stringify(wordBankSource));
+    <section id="screen-ready" class="screen">
+        <div style="flex:1; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center;">
+            <h1>Próxima Rodada</h1>
+            <div class="card" style="width: 100%;">
+                <h2 style="font-size: 2rem; color: var(--primary);">Time <span id="ready-team-id">1</span></h2>
+                <div id="ready-meta-display" style="color: var(--text-muted); margin-bottom: 10px;"></div>
+                <p style="color: var(--text-muted);">Preparem-se!</p>
+            </div>
+            <button class="btn btn-success" onclick="GameApp.startRound()">
+                COMEÇAR AGORA! ⏱️
+            </button>
+        </div>
+        <div class="card">
+             <h3>Placar Atual</h3>
+             <div id="ready-scoreboard"></div>
+        </div>
+    </section>
 
-            const totalWordsNeeded = numPlayers * numRounds;
-            const totalWordsAvailable = Object.values(availableWords).flat().length;
+    <section id="screen-game" class="screen">
+        <div class="game-header">
+            <div class="header-top">
+                <span style="font-weight:bold; font-size: 1.1rem;">Time <span id="game-team-id">1</span></span>
+                <span style="font-weight:bold; color: var(--primary); font-size: 1.1rem;">Pontos na Vez: <span id="game-round-score">0</span></span>
+            </div>
+            <div class="header-sub">
+                <span id="game-total-score">Total Acumulado: 0</span>
+                <span id="game-target-display">Meta: --</span>
+            </div>
+        </div>
 
-            if (totalWordsNeeded > totalWordsAvailable) {
-                alert(`Atenção: Você precisa de ${totalWordsNeeded} palavras, mas só há ${totalWordsAvailable} disponíveis. Reduza as rodadas ou jogadores!`);
-                return;
-            }
+        <div class="timer-wrapper">
+            <div class="timer-info">
+                <span id="timer-display" class="timer-display">00s</span>
+            </div>
+            <div class="timer-bar-container">
+                <div id="timer-bar" class="timer-bar"></div>
+            </div>
+        </div>
 
-            scores = Array(numPlayers).fill(0).map((_, i) => ({
-                name: `Jogador ${i + 1}`,
-                score: 0
-            }));
+        <div class="word-card" id="card-display">
+            <span class="category-tag" id="word-category">Categoria</span>
+            <div class="the-word" id="word-text">...</div>
+        </div>
 
-            totalWordsPerRound = numPlayers;
-            currentRound = 1;
-            currentPlayerIndex = 0;
-            wordsDrawnInRound = 0;
+        <div class="controls-area">
+            <button class="btn btn-warning" onclick="GameApp.skipWord()">
+                Pular
+            </button>
+            <button class="btn btn-success" onclick="GameApp.correctGuess()">
+                ACERTOU! (👍)
+            </button>
+        </div>
+        
+        <div style="margin-top: 15px; display: flex; gap: 10px;">
+            <button class="btn btn-outline" style="padding: 10px;" onclick="GameApp.togglePause()" id="btn-pause">
+                ⏸️ Pausar
+            </button>
+            <button class="btn btn-danger" style="padding: 10px;" onclick="GameApp.endRoundManually()">
+                Encerrar Vez
+            </button>
+        </div>
+    </section>
 
-            configSection.style.display = 'none';
-            gameSection.style.display = 'block';
+    <section id="screen-results" class="screen">
+        <h1>🏆 Fim de Jogo!</h1>
+        <div class="card">
+            <h2>Placar Final</h2>
+            <ul class="score-list" id="final-score-list"></ul>
+        </div>
+        <button class="btn btn-primary" onclick="location.reload()">Novo Jogo</button>
+    </section>
 
-            startNextTurn();
+</div>
+
+<script>
+/**
+ * DADOS MOCKADOS
+ */
+const MOCK_DB = [
+    // FÁCIL (Verde)
+    { id: 1, palavra: "Cachorro", categoria: "Animais", dificuldade: "facil" },
+    { id: 2, palavra: "Bola", categoria: "Objetos", dificuldade: "facil" },
+    { id: 3, palavra: "Dormir", categoria: "Ações", dificuldade: "facil" },
+    { id: 4, palavra: "Banana", categoria: "Alimentos", dificuldade: "facil" },
+    { id: 5, palavra: "Carro", categoria: "Transporte", dificuldade: "facil" },
+    { id: 6, palavra: "Chorar", categoria: "Ações", dificuldade: "facil" },
+    { id: 7, palavra: "Avião", categoria: "Transporte", dificuldade: "facil" },
+    { id: 8, palavra: "Telefone", categoria: "Objetos", dificuldade: "facil" },
+    { id: 10, palavra: "Futebol", categoria: "Esportes", dificuldade: "facil" },
+    { id: 11, palavra: "Bebê", categoria: "Pessoas", dificuldade: "facil" },
+    { id: 12, palavra: "Escovar os dentes", categoria: "Ações", dificuldade: "facil" },
+    
+    // MÉDIO (Laranja)
+    { id: 16, palavra: "Médico", categoria: "Profissões", dificuldade: "medio" },
+    { id: 17, palavra: "Pintar um quadro", categoria: "Ações", dificuldade: "medio" },
+    { id: 18, palavra: "Elefante", categoria: "Animais", dificuldade: "medio" },
+    { id: 19, palavra: "Astronauta", categoria: "Profissões", dificuldade: "medio" },
+    { id: 20, palavra: "Acampar", categoria: "Lazer", dificuldade: "medio" },
+    { id: 22, palavra: "Guitarra", categoria: "Instrumentos", dificuldade: "medio" },
+    { id: 23, palavra: "Tropeçar", categoria: "Ações", dificuldade: "medio" },
+    { id: 24, palavra: "Cozinhar", categoria: "Ações", dificuldade: "medio" },
+    
+    // DIFÍCIL (Vermelho)
+    { id: 31, palavra: "Harry Potter", categoria: "Personagens", dificuldade: "dificil" },
+    { id: 32, palavra: "Evolução", categoria: "Conceitos", dificuldade: "dificil" },
+    { id: 33, palavra: "Gravidade", categoria: "Ciência", dificuldade: "dificil" },
+    { id: 35, palavra: "Nostalgia", categoria: "Sentimentos", dificuldade: "dificil" },
+    { id: 36, palavra: "Internet", categoria: "Tecnologia", dificuldade: "dificil" },
+    { id: 37, palavra: "Democracia", categoria: "Conceitos", dificuldade: "dificil" },
+    { id: 40, palavra: "Eclipse", categoria: "Natureza", dificuldade: "dificil" },
+    { id: 48, palavra: "Wi-Fi caindo", categoria: "Situações", dificuldade: "dificil" },
+    { id: 42, palavra: "Titanic", categoria: "Filmes", dificuldade: "dificil" }
+];
+
+/**
+ * LÓGICA DO JOGO (GameApp)
+ */
+const GameApp = (() => {
+    
+    // --- STATE ---
+    let config = { teams: 2, duration: 60, difficulty: 'misto', targetScore: 0 };
+    let state = {
+        currentTeam: 0,
+        scores: [],
+        deck: [],
+        discardPile: [],
+        timer: null,
+        timeLeft: 0,
+        isPaused: false,
+        roundScore: 0,
+        currentWord: null
+    };
+
+    // --- DOM ELEMENTS ---
+    const screens = {
+        config: document.getElementById('screen-config'),
+        ready: document.getElementById('screen-ready'),
+        game: document.getElementById('screen-game'),
+        results: document.getElementById('screen-results')
+    };
+
+    const ui = {
+        timerBar: document.getElementById('timer-bar'),
+        timerText: document.getElementById('timer-display'),
+        wordText: document.getElementById('word-text'),
+        wordCat: document.getElementById('word-category'),
+        gameTeamId: document.getElementById('game-team-id'),
+        readyTeamId: document.getElementById('ready-team-id'),
+        roundScore: document.getElementById('game-round-score'),
+        totalScore: document.getElementById('game-total-score'),
+        targetDisplay: document.getElementById('game-target-display'),
+        readyMetaDisplay: document.getElementById('ready-meta-display'),
+        readyScoreboard: document.getElementById('ready-scoreboard'),
+        pauseBtn: document.getElementById('btn-pause'),
+        cardDisplay: document.getElementById('card-display')
+    };
+
+    // --- UTILS ---
+    function showScreen(screenName) {
+        Object.values(screens).forEach(s => s.classList.remove('active'));
+        screens[screenName].classList.add('active');
+    }
+
+    function shuffle(array) {
+        let currentIndex = array.length, randomIndex;
+        while (currentIndex != 0) {
+            randomIndex = Math.floor(Math.random() * currentIndex);
+            currentIndex--;
+            [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+        }
+        return array;
+    }
+
+    // --- CORE FUNCTIONS ---
+    function initGame() {
+        config.difficulty = document.getElementById('config-difficulty').value;
+        config.teams = parseInt(document.getElementById('config-teams').value);
+        config.duration = parseInt(document.getElementById('config-timer').value);
+        
+        // Pega a meta de pontos (se vazio ou 0, considera infinito)
+        const targetInput = document.getElementById('config-target').value;
+        config.targetScore = targetInput ? parseInt(targetInput) : 0;
+
+        let filteredWords = MOCK_DB;
+        if (config.difficulty !== 'misto') {
+            filteredWords = MOCK_DB.filter(w => w.dificuldade === config.difficulty);
+        }
+        
+        state.deck = shuffle([...filteredWords]);
+        state.discardPile = [];
+        state.scores = new Array(config.teams).fill(0);
+        state.currentTeam = 0;
+
+        showReadyScreen();
+    }
+
+    function showReadyScreen() {
+        ui.readyTeamId.textContent = state.currentTeam + 1;
+        
+        // Mostra a Meta na tela de Ready
+        if (config.targetScore > 0) {
+            ui.readyMetaDisplay.textContent = `Meta para vencer: ${config.targetScore} pontos`;
+        } else {
+            ui.readyMetaDisplay.textContent = "Modo Infinito";
         }
 
-        /**
-         * Sorteia uma palavra aleatória de uma categoria aleatória e A REMOVE do banco.
-         */
-        function drawWord() {
-            // Filtra categorias que ainda possuem palavras
-            const categories = Object.keys(availableWords).filter(key => availableWords[key].length > 0);
-            
-            if (categories.length === 0) {
-                return "FIM DE PALAVRAS!";
-            }
+        let html = '';
+        state.scores.forEach((score, idx) => {
+            // Verifica se alguém já bateu a meta para destacar (caso continue jogando)
+            const targetHit = (config.targetScore > 0 && score >= config.targetScore) ? ' (Meta Atingida!)' : '';
+            html += `<div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                        <span>Time ${idx + 1}</span> <strong>${score} pts${targetHit}</strong>
+                     </div>`;
+        });
+        ui.readyScoreboard.innerHTML = html;
+        showScreen('ready');
+    }
 
-            // 1. Sorteia a Categoria
-            const randomCategoryKey = categories[Math.floor(Math.random() * categories.length)];
-            let categoryWords = availableWords[randomCategoryKey];
-            
-            // 2. Sorteia o índice e a Palavra
-            const randomIndex = Math.floor(Math.random() * categoryWords.length);
-            const randomWord = categoryWords[randomIndex];
-            
-            // 3. REMOVE a palavra sorteada do array da categoria
-            categoryWords.splice(randomIndex, 1);
-            
-            return `${randomWord} (Categoria: ${randomCategoryKey})`;
-        }
+    function startRound() {
+        state.roundScore = 0;
+        state.timeLeft = config.duration;
+        state.isPaused = false;
+        
+        ui.roundScore.textContent = 0;
+        ui.gameTeamId.textContent = state.currentTeam + 1;
+        ui.pauseBtn.textContent = "⏸️ Pausar";
+        
+        // Update Total Info in Header
+        ui.totalScore.textContent = `Total Acumulado: ${state.scores[state.currentTeam]}`;
+        ui.targetDisplay.textContent = config.targetScore > 0 ? `Meta: ${config.targetScore}` : "Meta: ∞";
 
-        /**
-         * Inicia o turno de um jogador/time: sorteia uma palavra e atualiza o display.
-         */
-        function startNextTurn() {
-            if (currentRound > numRounds) {
+        // Reset Timer Styles
+        ui.timerText.classList.remove('critical');
+        ui.timerText.style.color = 'var(--text-muted)';
+        ui.timerBar.style.backgroundColor = 'var(--primary)';
+        
+        drawNextWord();
+        showScreen('game');
+        startTimer();
+    }
+
+    function drawNextWord() {
+        if (state.deck.length === 0) {
+            if (state.discardPile.length === 0) {
+                alert("Não há mais palavras no banco de dados!");
                 endGame();
                 return;
             }
+            state.deck = shuffle([...state.discardPile]);
+            state.discardPile = [];
+        }
 
-            currentRoundDisplay.textContent = currentRound;
-            const currentPlayer = scores[currentPlayerIndex];
-            currentPlayerDisplay.textContent = currentPlayer.name;
+        const wordObj = state.deck.pop();
+        state.currentWord = wordObj;
+        
+        ui.wordText.textContent = wordObj.palavra;
+        ui.wordCat.textContent = wordObj.categoria;
+        
+        ui.wordCat.className = 'category-tag'; 
+        ui.wordCat.classList.add(`tag-${wordObj.dificuldade}`); 
+
+        ui.cardDisplay.classList.remove('shake');
+        void ui.cardDisplay.offsetWidth; 
+        ui.cardDisplay.classList.add('fadeIn');
+        
+        if(wordObj.dificuldade === 'facil') ui.cardDisplay.style.borderColor = 'var(--success)';
+        else if(wordObj.dificuldade === 'medio') ui.cardDisplay.style.borderColor = 'var(--warning)';
+        else ui.cardDisplay.style.borderColor = 'var(--danger)';
+    }
+
+    function correctGuess() {
+        if(state.isPaused) return;
+        state.roundScore++;
+        ui.roundScore.textContent = state.roundScore;
+        
+        // Atualiza visualmente o total somado (apenas visual)
+        const currentTotal = state.scores[state.currentTeam] + state.roundScore;
+        ui.totalScore.textContent = `Total Acumulado: ${currentTotal}`;
+        
+        // Feedback visual se bateu a meta DURANTE a rodada (mas o jogo só acaba no fim da rodada)
+        if(config.targetScore > 0 && currentTotal >= config.targetScore) {
+            ui.totalScore.style.color = "var(--success)";
+            ui.totalScore.style.fontWeight = "bold";
+        }
+
+        state.discardPile.push(state.currentWord);
+        
+        document.body.style.backgroundColor = "#dcfce7";
+        setTimeout(() => document.body.style.backgroundColor = "var(--background)", 200);
+
+        drawNextWord();
+    }
+
+    function skipWord() {
+        if(state.isPaused) return;
+        state.discardPile.push(state.currentWord);
+        ui.cardDisplay.classList.add('shake');
+        drawNextWord();
+    }
+
+    function togglePause() {
+        state.isPaused = !state.isPaused;
+        if(state.isPaused) {
+            clearInterval(state.timer);
+            ui.wordText.textContent = "PAUSADO";
+            ui.pauseBtn.textContent = "▶️ Continuar";
+            ui.timerBar.style.backgroundColor = "#94a3b8";
+        } else {
+            ui.wordText.textContent = state.currentWord.palavra;
+            ui.pauseBtn.textContent = "⏸️ Pausar";
+            ui.timerBar.style.backgroundColor = "var(--primary)";
+            startTimer();
+        }
+    }
+
+    function startTimer() {
+        clearInterval(state.timer);
+        state.timer = setInterval(() => {
+            if(!state.isPaused) {
+                state.timeLeft -= 0.1;
+                
+                const percentage = (state.timeLeft / config.duration) * 100;
+                const secondsLeft = Math.ceil(state.timeLeft);
+                
+                ui.timerBar.style.width = percentage + "%";
+                ui.timerText.textContent = secondsLeft + "s";
+
+                if(secondsLeft <= 10) {
+                    ui.timerBar.style.backgroundColor = "var(--danger)";
+                    ui.timerText.classList.add('critical');
+                } else {
+                    ui.timerBar.style.backgroundColor = "var(--primary)";
+                }
+
+                if (state.timeLeft <= 0) {
+                    ui.timerText.textContent = "0s";
+                    endRound();
+                }
+            }
+        }, 100);
+    }
+
+    function endRoundManually() {
+        if(confirm("Deseja encerrar a vez deste time agora?")) endRound();
+    }
+
+    function endRound() {
+        clearInterval(state.timer);
+        
+        // 1. Consolida Pontuação
+        state.scores[state.currentTeam] += state.roundScore;
+        
+        // Reset estilos de texto
+        ui.totalScore.style.color = ""; 
+
+        if(navigator.vibrate) navigator.vibrate([200, 100, 200]);
+        alert(`Tempo Esgotado! \nVocê fez ${state.roundScore} pontos.`);
+
+        // 2. Verifica FIM DE JOGO (Opção 2: Rodadas Iguais)
+        // Só verificamos vitória se o time atual for o ÚLTIMO da rotação (TeamIndex == NumTeams - 1)
+        if (state.currentTeam === config.teams - 1) {
+            // Rodada completa para todos os times. Agora checamos se alguém bateu a meta.
+            const highScore = Math.max(...state.scores);
             
-            const wordResult = drawWord();
-            
-            if (wordResult === "FIM DE PALAVRAS!") {
-                alert("O jogo encerrou por falta de palavras disponíveis!");
+            if (config.targetScore > 0 && highScore >= config.targetScore) {
                 endGame();
-                return;
+                return; // Encerra função aqui
             }
-
-            wordDisplay.textContent = wordResult;
         }
 
-        /**
-         * Marca o resultado da adivinhação do jogador atual e avança para o próximo turno.
-         */
-        function markGuess(guessedCorrectly) {
-            if (currentRound > numRounds) {
-                return;
-            }
+        // 3. Próximo Time (Se não acabou o jogo)
+        state.currentTeam++;
+        if (state.currentTeam >= config.teams) state.currentTeam = 0;
+        
+        showReadyScreen();
+    }
 
-            if (guessedCorrectly) {
-                scores[currentPlayerIndex].score += 1;
-                // Alerta removido para um fluxo de jogo mais rápido.
-            }
+    function endGame() {
+        clearInterval(state.timer);
+        const list = document.getElementById('final-score-list');
+        list.innerHTML = '';
+        
+        const sortedScores = state.scores
+            .map((score, index) => ({ id: index + 1, score: score }))
+            .sort((a, b) => b.score - a.score);
 
-            // Passa para o próximo jogador
-            currentPlayerIndex = (currentPlayerIndex + 1) % numPlayers;
-            wordsDrawnInRound++;
+        sortedScores.forEach((item, index) => {
+            const medal = index === 0 ? '🥇' : (index === 1 ? '🥈' : '🥉');
+            const winnerText = (index === 0 && config.targetScore > 0) ? '<span class="winner-badge">VENCEDOR!</span>' : '';
+            
+            list.innerHTML += `
+                <li class="score-item">
+                    <span>${medal} Time ${item.id} ${winnerText}</span>
+                    <span class="score-val">${item.score} pts</span>
+                </li>
+            `;
+        });
+        showScreen('results');
+    }
 
-            // Verifica se a rodada atual terminou
-            if (wordsDrawnInRound >= totalWordsPerRound) {
-                currentRound++;
-                wordsDrawnInRound = 0;
-            }
+    return { initGame, startRound, correctGuess, skipWord, togglePause, endRoundManually };
 
-            startNextTurn();
-        }
-
-        /**
-         * Encerra o jogo e exibe o placar final.
-         */
-        function endGame() {
-            gameSection.style.display = 'none';
-            scoreboardSection.style.display = 'block';
-
-            const sortedScores = [...scores].sort((a, b) => b.score - a.score);
-
-            finalScoresDisplay.innerHTML = sortedScores.map((player, index) => 
-                `<div class="score-item">
-                    <strong>${index + 1}º Lugar - ${player.name}</strong>: ${player.score} pontos
-                </div>`
-            ).join('');
-        }
-    </script>
+})();
+</script>
 </body>
 </html>
