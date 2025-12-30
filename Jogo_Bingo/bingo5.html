@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Bingo P2P</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --secondary: #1e40af;
+            --accent: #f59e0b;
+            --bg: #f8fafc;
+            --text: #1e293b;
+            --card-bg: #ffffff;
+            --selected: #22c55e;
+            --danger: #ef4444;
+            --sticky-bg: rgba(255, 255, 255, 0.98);
+            
+            /* Cores das Colunas BINGO */
+            --col-b: #fee2e2; --text-b: #991b1b;
+            --col-i: #fef9c3; --text-i: #854d0e;
+            --col-n: #dcfce7; --text-n: #166534;
+            --col-g: #dbeafe; --text-g: #1e40af;
+            --col-o: #f3e8ff; --text-o: #6b21a8;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-tap-highlight-color: transparent; }
+        
+        body { background-color: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; overflow-x: hidden; }
+
+        .container { max-width: 600px; margin: 0 auto; width: 100%; flex: 1; display: flex; flex-direction: column; padding: 10px; }
+        .screen { display: none; flex-direction: column; gap: 15px; animation: fadeIn 0.3s ease-in-out; padding-bottom: 30px; }
+        .screen.active { display: flex; }
+
+        h1, h2, h3 { text-align: center; color: var(--secondary); }
+        h1 { font-size: 1.8rem; margin: 10px 0; }
+
+        button {
+            background-color: var(--primary); color: white; border: none; padding: 15px; 
+            border-radius: 12px; font-size: 1.1rem; font-weight: bold; cursor: pointer; 
+            transition: transform 0.1s, opacity 0.2s; width: 100%;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        button:active { transform: scale(0.98); }
+        button.secondary { background-color: var(--accent); }
+        button.danger { background-color: var(--danger); }
+        button:disabled { background-color: #cbd5e1; cursor: not-allowed; transform: none; box-shadow: none; }
+
+        input, select {
+            padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 1rem; width: 100%; background: #fff;
+        }
+        input:focus, select:focus { outline: none; border-color: var(--primary); }
+
+        .card { background: var(--card-bg); padding: 15px; border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+        .info-box { background-color: #eff6ff; color: #1e3a8a; padding: 12px; border-radius: 8px; font-size: 0.9rem; border-left: 4px solid var(--primary); }
+
+        /* --- STICKY HEADER (Com Histórico) --- */
+        .sticky-header {
+            position: sticky; top: 0; z-index: 100;
+            background: var(--sticky-bg);
+            padding: 10px 0 5px 0; margin: -10px -10px 5px -10px;
+            border-bottom: 1px solid #cbd5e1;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            display: flex; flex-direction: column; align-items: center; gap: 5px;
+        }
+
+        .header-top-row { width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 0 15px; }
+
+        .caller-display {
+            background: var(--secondary); color: white; width: 95%;
+            padding: 10px; border-radius: 12px; text-align: center;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .last-call { font-size: 3rem; font-weight: 900; line-height: 1; }
+        .last-call span { font-size: 1rem; font-weight: 400; opacity: 0.9; margin-left: 10px; display: inline-block; vertical-align: middle; }
+
+        /* Histórico Horizontal */
+        .history-strip {
+            width: 100%; overflow-x: auto; white-space: nowrap; padding: 5px 15px;
+            display: flex; gap: 8px; align-items: center; min-height: 50px;
+            scrollbar-width: none;
+        }
+        .history-strip::-webkit-scrollbar { display: none; }
+        
+        .history-ball {
+            min-width: 36px; height: 36px; border-radius: 50%; 
+            display: flex; align-items: center; justify-content: center;
+            font-weight: bold; font-size: 0.9rem; border: 2px solid rgba(0,0,0,0.1);
+            background: #e2e8f0; color: #64748b; flex-shrink: 0;
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .history-ball:first-child { border: 3px solid var(--accent); transform: scale(1.1); }
+
+        /* Master Board (1-75) */
+        .master-board { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; margin-top: 10px; user-select: none; }
+        .mb-col-header { text-align: center; font-weight: 900; padding: 5px; font-size: 1.1rem; border-radius: 4px; }
+        .mb-cell {
+            aspect-ratio: 1.3; display: flex; align-items: center; justify-content: center;
+            font-size: 0.8rem; border-radius: 6px; background: #f1f5f9; color: #94a3b8;
+            font-weight: bold; transition: all 0.3s;
+        }
+        .mb-cell.active { transform: scale(1.05); box-shadow: inset 0 0 0 2px rgba(0,0,0,0.1); color: #000; }
+        
+        /* Cores Dinâmicas */
+        .c-b { background: var(--col-b) !important; color: var(--text-b) !important; }
+        .c-i { background: var(--col-i) !important; color: var(--text-i) !important; }
+        .c-n { background: var(--col-n) !important; color: var(--text-n) !important; }
+        .c-g { background: var(--col-g) !important; color: var(--text-g) !important; }
+        .c-o { background: var(--col-o) !important; color: var(--text-o) !important; }
+
+        /* Cartela Jogador */
+        .bingo-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-top: 5px; }
+        .bingo-cell {
+            aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+            background: #e2e8f0; border-radius: 8px; font-weight: bold; font-size: 1.2rem;
+            cursor: pointer; user-select: none; transition: background 0.1s;
+        }
+        .bingo-cell.selected { background-color: var(--selected); color: white; }
+        .bingo-cell.free { background-color: var(--accent); color: white; font-size: 1.5rem; }
+
+        /* Lista de Prêmios */
+        .prize-list { list-style: none; margin-top: 10px; max-height: 120px; overflow-y: auto; }
+        .prize-item { display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid #eee; align-items: center; }
+        .btn-mini { padding: 5px 10px; font-size: 0.8rem; width: auto; margin-left: 5px; }
+
+        /* Toast */
+        #toast {
+            visibility: hidden; min-width: 250px; background-color: #1e293b; color: #fff; text-align: center;
+            border-radius: 50px; padding: 12px 20px; position: fixed; z-index: 2000; left: 50%; bottom: 30px;
+            transform: translateX(-50%) translateY(20px); opacity: 0; transition: all 0.3s;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3); font-size: 0.9rem;
+        }
+        #toast.show { visibility: visible; opacity: 1; transform: translateX(-50%) translateY(0); }
+
+        .player-list li { padding: 8px; background: white; margin-bottom: 4px; border-radius: 4px; display: flex; justify-content: space-between; font-size: 0.9rem; border: 1px solid #e2e8f0; }
+        .copy-area { display: flex; gap: 5px; }
+
+        @keyframes popIn { 0% { transform: scale(0); } 80% { transform: scale(1.1); } 100% { transform: scale(1); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+    
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+</head>
+<body>
+
+    <div class="container">
+        
+        <div id="screen-home" class="screen active">
+            <h1>🎱 Bingo P2P <small style="font-size: 0.5em; opacity: 0.6;">Gold</small></h1>
+            <div class="card">
+                <h3>Novo Jogo</h3>
+                <label style="font-size: 0.9rem; color: #64748b;">Modo de Jogo:</label>
+                <select id="gameModeSelect" onchange="app.updateInstructions()">
+                    <option value="FULL">Modo Completo (Sorteio + Cartela)</option>
+                    <option value="CARD_ONLY">Apenas Cartela (Roleta Física)</option>
+                    <option value="RNG_ONLY">Apenas Sorteio (Narrador)</option>
+                </select>
+                
+                <div id="dynamicInstructions" class="info-box" style="margin-top: 10px;"></div>
+
+                <div id="nicknameGroup" style="margin-top: 15px;">
+                    <label>Seu Apelido:</label>
+                    <input type="text" id="nicknameInput" placeholder="Ex: Maria" maxlength="15">
+                </div>
+            </div>
+            
+            <div style="margin-top: auto; display: flex; flex-direction: column; gap: 10px;">
+                <button onclick="app.hostGame()">🏠 CRIAR SALA</button>
+                <button class="secondary" id="btnJoinMenu" onclick="app.joinMenu()">🔗 ENTRAR EM SALA</button>
+            </div>
+        </div>
+
+        <div id="screen-join" class="screen">
+            <h1>Entrar</h1>
+            <button class="secondary" onclick="app.backToHome()" style="width: auto; align-self: flex-start; margin-bottom: 10px;">⬅ Voltar</button>
+            <div class="card">
+                <p>Insira o ID da Sala:</p>
+                <input type="text" id="joinIdInput" placeholder="ID (Cole aqui)">
+            </div>
+            <button onclick="app.connectToHost()" style="margin-top: 15px;">Conectar</button>
+        </div>
+
+        <div id="screen-config" class="screen">
+            <h1>Configuração</h1>
+            
+            <div class="card">
+                <h3>Sala Criada!</h3>
+                <div class="copy-area">
+                    <input type="text" id="myIdDisplay" readonly style="background: #f1f5f9; color: var(--text); font-weight: bold; letter-spacing: 1px;">
+                    <button onclick="app.copyID()" style="width: auto; padding: 0 15px;">📋</button>
+                </div>
+                <small style="color: #64748b; margin-top: 5px; display:block;">Envie este ID para os jogadores.</small>
+            </div>
+
+            <div class="card" id="prizesConfig">
+                <h3>Prêmios (Por Rodada)</h3>
+                <div style="display: flex; gap: 5px;">
+                    <input type="text" id="prizeInput" placeholder="Ex: Chocolate...">
+                    <button onclick="app.addPrize()" style="width: auto;">➕</button>
+                </div>
+                <ul id="prizeListDisplay" class="prize-list"></ul>
+                <div id="prizeWarning" style="color: var(--danger); font-size: 0.8rem; display: none; margin-top: 5px;">Adicione ao menos 1 prêmio.</div>
+            </div>
+
+            <div class="card" id="playerListCard">
+                <h3>Jogadores: <span id="playerCount">0</span></h3>
+                <ul id="hostPlayerList" class="player-list"></ul>
+            </div>
+
+            <button onclick="app.startGame()" style="margin-top: auto;">▶ INICIAR JOGO</button>
+        </div>
+
+        <div id="screen-game" class="screen">
+            
+            <div class="sticky-header">
+                <div class="header-top-row">
+                    <div style="font-size: 0.9rem; line-height: 1.2;">
+                        <strong id="roundDisplay">Rodada 1</strong><br>
+                        <span id="prizeDisplay" style="color: var(--primary);">Prêmio...</span>
+                    </div>
+                    <button onclick="app.confirmExit()" class="danger btn-mini">Sair</button>
+                </div>
+
+                <div id="callerArea" style="width: 100%; display: none; flex-direction: column; align-items: center;">
+                    
+                    <div class="caller-display">
+                        <div class="last-call" id="currentCallNumber">--<span>Aguarde</span></div>
+                    </div>
+
+                    <div id="callHistory" class="history-strip"></div>
+                    
+                    <div id="hostControls" style="display: none; gap: 10px; margin-top: 5px; width: 95%;">
+                        <button id="btnDraw" onclick="app.drawNumber()" class="secondary">🎤 SORTEAR</button>
+                        <button id="btnNextRound" onclick="app.confirmNextRound()" style="background: var(--selected); display:none;">PRÓXIMA RODADA ⏩</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="masterBoardArea" style="display: none;">
+                <div class="card">
+                    <h3 style="font-size: 1rem; margin-bottom: 5px;">Tabuleiro Geral</h3>
+                    <div class="master-board">
+                        <div class="mb-col-header c-b">B</div>
+                        <div class="mb-col-header c-i">I</div>
+                        <div class="mb-col-header c-n">N</div>
+                        <div class="mb-col-header c-g">G</div>
+                        <div class="mb-col-header c-o">O</div>
+                        <div id="col-B" class="mb-col"></div>
+                        <div id="col-I" class="mb-col"></div>
+                        <div id="col-N" class="mb-col"></div>
+                        <div id="col-G" class="mb-col"></div>
+                        <div id="col-O" class="mb-col"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="cardArea" style="margin-top: 10px;">
+                <div class="card">
+                    <div style="display: grid; grid-template-columns: repeat(5, 1fr); text-align: center; font-weight: 900; color: var(--primary); font-size: 1.2rem; margin-bottom: 5px;">
+                        <div>B</div><div>I</div><div>N</div><div>G</div><div>O</div>
+                    </div>
+                    <div id="myBingoCard" class="bingo-grid"></div>
+                </div>
+                <p style="text-align: center; margin-top: 10px; font-size: 0.9rem; color: #64748b;">Toque nos números para marcar.</p>
+            </div>
+
+        </div>
+
+    </div>
+
+    <div id="toast">Notificação</div>
+
+    <script>
+        const INSTRUCTIONS = {
+			FULL: `
+				<strong>🏆 Modo Completo (Padrão)</strong><br><br>
+				Ideal para jogar com amigos à distância ou na mesma sala, onde tudo é feito pelo celular.<br>
+				<ul style="margin-left: 20px; margin-top: 5px;">
+					<li><strong>Host (Você):</strong> Cria a sala, define os prêmios e clica em "Sortear". Você <em>também joga</em> com sua própria cartela.</li>
+					<li><strong>Jogadores:</strong> Devem clicar em "Entrar", colar o ID que você vai enviar e marcar os números na tela deles.</li>
+					<li><strong>Objetivo:</strong> Quem completar a cartela primeiro deve gritar BINGO! (O app avisa se a conexão cair).</li>
+				</ul>
+			`,
+			
+			CARD_ONLY: `
+				<strong>📱 Modo Apenas Cartela (Digital)</strong><br><br>
+				Use este modo se você já tem um <strong>Globo Físico</strong>, Sorteador de Bolinhas ou está assistindo a um sorteio na TV.<br>
+				<ul style="margin-left: 20px; margin-top: 5px;">
+					<li><strong>Host (Você):</strong> Cria a sala apenas para controlar o início das rodadas e os prêmios. O sorteio dos números é feito fora do App (manualmente).</li>
+					<li><strong>Jogadores:</strong> Usam o celular apenas como uma cartela digital ecológica (sem papel).</li>
+					<li><strong>Dica:</strong> Ninguém clica em "Sortear" neste modo.</li>
+				</ul>
+			`,
+			
+			RNG_ONLY: `
+				<strong>🎤 Modo Narrador (Mesa de Som)</strong><br><br>
+				Transforma seu dispositivo em um Sorteador Profissional. Ideal para igrejas, salões ou festas onde os convidados usam <strong>cartelas de papel</strong>.<br>
+				<ul style="margin-left: 20px; margin-top: 5px;">
+					<li><strong>Host (Você):</strong> Conecte este dispositivo em uma TV ou Projetor. O app vai sortear, falar o número em voz alta e mostrar o tabuleiro geral.</li>
+					<li><strong>Jogadores:</strong> Não precisam do app. Eles jogam com cartelas físicas.</li>
+					<li><strong>Atenção:</strong> Neste modo, nenhuma cartela é gerada na tela.</li>
+				</ul>
+			`
+		};
+
+        const app = {
+            peer: null, conn: [], hostConn: null, myId: null,
+            role: null, nickname: '', gameMode: 'FULL', gameActive: false,
+            prizes: [], currentRoundIndex: 0,
+            drawnNumbers: new Set(), cardNumbers: [],
+
+            init: () => {
+                app.updateInstructions();
+                window.onbeforeunload = (e) => { if (app.gameActive) { e.preventDefault(); e.returnValue = ''; } };
+                document.getElementById('prizeInput').addEventListener('keypress', (e) => { if(e.key === 'Enter') app.addPrize(); });
+            },
+
+            updateInstructions: () => {
+                const mode = document.getElementById('gameModeSelect').value;
+                document.getElementById('dynamicInstructions').innerHTML = INSTRUCTIONS[mode];
+                const isRNG = mode === 'RNG_ONLY';
+                document.getElementById('nicknameGroup').style.display = isRNG ? 'none' : 'block';
+                document.getElementById('btnJoinMenu').style.display = isRNG ? 'none' : 'block';
+            },
+
+            showScreen: (id) => {
+                document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+                document.getElementById(id).classList.add('active');
+                window.scrollTo(0,0);
+            },
+
+            showToast: (msg) => {
+                const t = document.getElementById("toast");
+                t.textContent = msg; t.className = "show";
+                setTimeout(() => t.className = t.className.replace("show", ""), 3000);
+            },
+
+            addPrize: () => {
+                const val = document.getElementById('prizeInput').value.trim();
+                if(!val) return;
+                app.prizes.push(val); document.getElementById('prizeInput').value = '';
+                app.renderPrizeList();
+                document.getElementById('prizeWarning').style.display = 'none';
+            },
+            removePrize: (i) => { app.prizes.splice(i,1); app.renderPrizeList(); },
+            renderPrizeList: () => {
+                const l = document.getElementById('prizeListDisplay'); l.innerHTML = '';
+                app.prizes.forEach((p, i) => {
+                    l.innerHTML += `<li class="prize-item"><span>${i+1}ª: ${p}</span> <button class="danger btn-mini" onclick="app.removePrize(${i})">X</button></li>`;
+                });
+            },
+
+            initPeer: (cb) => {
+                app.peer = new Peer(null, { debug: 1 });
+                app.peer.on('open', (id) => { app.myId = id; cb(id); });
+                app.peer.on('error', (err) => app.showToast("Erro Rede: " + err.type));
+                app.peer.on('connection', (c) => {
+                    if(app.role === 'HOST') app.handleHostConn(c); else c.close();
+                });
+            },
+
+            hostGame: () => {
+                const mode = document.getElementById('gameModeSelect').value;
+                if(mode !== 'RNG_ONLY' && !document.getElementById('nicknameInput').value.trim()) return app.showToast("Digite seu apelido!");
+                
+                app.role = 'HOST'; app.gameMode = mode;
+                app.nickname = mode === 'RNG_ONLY' ? "Mesa de Som" : document.getElementById('nicknameInput').value;
+                app.prizes = [];
+
+                app.initPeer((id) => {
+                    document.getElementById('myIdDisplay').value = id;
+                    app.showScreen('screen-config');
+                    document.getElementById('playerListCard').style.display = (mode === 'RNG_ONLY') ? 'none' : 'block';
+                });
+            },
+
+            handleHostConn: (c) => {
+                c.on('open', () => {
+                    c.on('data', (d) => {
+                        if(d.type === 'JOIN') {
+                            app.conn.push({ conn: c, nick: d.nick });
+                            app.updateHostList();
+                            c.send({ type: 'WELCOME', mode: app.gameMode });
+                        }
+                    });
+                    c.on('close', () => { app.conn = app.conn.filter(x => x.conn !== c); app.updateHostList(); });
+                });
+            },
+
+            updateHostList: () => {
+                document.getElementById('hostPlayerList').innerHTML = app.conn.map(x => `<li>${x.nick}</li>`).join('');
+                document.getElementById('playerCount').innerText = app.conn.length;
+            },
+
+            startGame: () => {
+                if(app.prizes.length === 0) { document.getElementById('prizeWarning').style.display = 'block'; return; }
+                app.currentRoundIndex = 0; app.gameActive = true;
+                const data = { type: 'START', round: 0, total: app.prizes.length, prize: app.prizes[0] };
+                app.broadcast(data);
+                app.setupRound(data);
+            },
+
+            confirmNextRound: () => {
+                if(confirm("Iniciar próxima rodada?")) {
+                    app.currentRoundIndex++;
+                    if(app.currentRoundIndex >= app.prizes.length) {
+                        app.broadcast({ type: 'GAME_OVER' }); alert("FIM DE JOGO!"); location.reload(); return;
+                    }
+                    const data = { type: 'NEW_ROUND', round: app.currentRoundIndex, total: app.prizes.length, prize: app.prizes[app.currentRoundIndex] };
+                    app.broadcast(data);
+                    app.setupRound(data);
+                }
+            },
+
+            joinMenu: () => {
+                if(!document.getElementById('nicknameInput').value.trim()) return app.showToast("Digite seu apelido!");
+                app.showScreen('screen-join');
+            },
+            backToHome: () => app.showScreen('screen-home'),
+            
+            connectToHost: () => {
+                const id = document.getElementById('joinIdInput').value.trim();
+                if(!id) return app.showToast("Cole o ID!");
+                app.role = 'CLIENT'; app.nickname = document.getElementById('nicknameInput').value;
+                
+                app.initPeer(() => {
+                    const c = app.peer.connect(id);
+                    c.on('open', () => {
+                        app.hostConn = c; c.send({ type: 'JOIN', nick: app.nickname });
+                        app.showToast("Conectado!");
+                    });
+                    c.on('data', app.handleClientData);
+                    c.on('close', () => { alert("Host desconectado."); location.reload(); });
+                });
+            },
+
+            handleClientData: (d) => {
+                if(d.type === 'WELCOME') app.gameMode = d.mode;
+                if(d.type === 'START' || d.type === 'NEW_ROUND') {
+                    if(d.type === 'NEW_ROUND') app.showToast("Nova Rodada!");
+                    app.setupRound(d);
+                }
+                if(d.type === 'CALL') app.onNumberCalled(d.num);
+                if(d.type === 'GAME_OVER') { alert("Fim de Jogo!"); location.reload(); }
+            },
+
+            setupRound: (data) => {
+                app.showScreen('screen-game');
+                app.drawnNumbers.clear();
+                document.getElementById('roundDisplay').innerText = `Rodada ${data.round + 1}/${data.total}`;
+                document.getElementById('prizeDisplay').innerText = data.prize;
+                document.getElementById('currentCallNumber').innerHTML = '--<span>Início</span>';
+                document.getElementById('callHistory').innerHTML = '';
+
+                const isHost = app.role === 'HOST';
+                const isRNG = app.gameMode === 'RNG_ONLY';
+                const isCardOnly = app.gameMode === 'CARD_ONLY';
+
+                // 1. VISIBILIDADE DO CALLER AREA (Topo)
+                const callerArea = document.getElementById('callerArea');
+                // Host sempre vê (para ter controles). Client só vê se não for Cartela Pura.
+                if (isHost || !isCardOnly) callerArea.style.display = 'flex';
+                else callerArea.style.display = 'none';
+
+                // 2. CONTROLES DO HOST
+                const hostControls = document.getElementById('hostControls');
+                if (isHost) {
+                    hostControls.style.display = 'flex';
+                    // Botão SORTEAR: Oculto se for Card Only
+                    document.getElementById('btnDraw').style.display = isCardOnly ? 'none' : 'inline-block';
+                    // Botão PROX RODADA: Visível direto se for Card Only (fluxo manual), senão espera sorteio
+                    document.getElementById('btnNextRound').style.display = isCardOnly ? 'inline-block' : 'none';
+                } else {
+                    hostControls.style.display = 'none';
+                }
+
+                // 3. MASTER BOARD (1-75)
+                const mbArea = document.getElementById('masterBoardArea');
+                // Exibe se for RNG, OU se for FULL e eu for HOST. Esconde para Cliente FULL.
+                if (isRNG || (app.gameMode === 'FULL' && isHost)) {
+                    mbArea.style.display = 'block';
+                    app.renderMasterBoard();
+                } else {
+                    mbArea.style.display = 'none';
+                }
+
+                // 4. CARTELA
+                const cardArea = document.getElementById('cardArea');
+                if (!isRNG) {
+                    cardArea.style.display = 'block';
+                    app.generateBingoCard();
+                    app.renderPlayerCard();
+                } else {
+                    cardArea.style.display = 'none';
+                }
+            },
+
+            renderMasterBoard: () => {
+                const cols = ['B','I','N','G','O'];
+                const ranges = [[1,15], [16,30], [31,45], [46,60], [61,75]];
+                cols.forEach((l, idx) => {
+                    const div = document.getElementById(`col-${l}`); div.innerHTML = '';
+                    div.style.display='grid'; div.style.gap='2px';
+                    for(let i=ranges[idx][0]; i<=ranges[idx][1]; i++) {
+                        const cell = document.createElement('div');
+                        cell.className = 'mb-cell'; cell.id = `mb-${i}`; cell.innerText = i;
+                        div.appendChild(cell);
+                    }
+                });
+            },
+
+            generateBingoCard: () => {
+                const getSet = (min,max,qty) => {
+                    const s = new Set(); while(s.size < qty) s.add(Math.floor(Math.random()*(max-min+1))+min); return Array.from(s);
+                };
+                const c = [getSet(1,15,5), getSet(16,30,5), getSet(31,45,4), getSet(46,60,5), getSet(61,75,5)];
+                app.cardNumbers = [];
+                for(let r=0; r<5; r++) {
+                    app.cardNumbers.push(c[0][r]);
+                    app.cardNumbers.push(c[1][r]);
+                    if(r===2) app.cardNumbers.push('FREE'); else if(r<2) app.cardNumbers.push(c[2][r]); else app.cardNumbers.push(c[2][r-1]);
+                    app.cardNumbers.push(c[3][r]);
+                    app.cardNumbers.push(c[4][r]);
+                }
+            },
+
+            renderPlayerCard: () => {
+                const g = document.getElementById('myBingoCard'); g.innerHTML = '';
+                app.cardNumbers.forEach(n => {
+                    const d = document.createElement('div');
+                    d.className = 'bingo-cell'+(n==='FREE'?' free selected':'');
+                    d.innerHTML = n==='FREE'?'★':n;
+                    if(n!=='FREE') d.onclick = () => d.classList.toggle('selected');
+                    g.appendChild(d);
+                });
+            },
+
+            drawNumber: () => {
+                if(app.role !== 'HOST') return;
+                if(app.drawnNumbers.size >= 75) {
+                    app.showToast("Fim dos números!");
+                    document.getElementById('btnDraw').style.display = 'none';
+                    document.getElementById('btnNextRound').style.display = 'inline-block';
+                    return;
+                }
+                let n; do { n = Math.floor(Math.random()*75)+1; } while(app.drawnNumbers.has(n));
+                app.onNumberCalled(n);
+                app.broadcast({ type: 'CALL', num: n });
+                document.getElementById('btnNextRound').style.display = 'inline-block';
+            },
+
+            onNumberCalled: (n) => {
+                app.drawnNumbers.add(n);
+                const l = n<=15?'B':n<=30?'I':n<=45?'N':n<=60?'G':'O';
+                document.getElementById('currentCallNumber').innerHTML = `${n}<span>${l}</span>`;
+                
+                const mb = document.getElementById(`mb-${n}`);
+                if(mb) mb.className = `mb-cell active c-${l.toLowerCase()}`;
+
+                const ball = document.createElement('div');
+                ball.className = `history-ball c-${l.toLowerCase()}`;
+                ball.innerText = n;
+                document.getElementById('callHistory').prepend(ball);
+
+                app.speakNumber(n, l);
+            },
+
+            speakNumber: (n, l) => {
+                if ('speechSynthesis' in window) {
+                    const msg = new SpeechSynthesisUtterance(`${l}, ${n}`);
+                    msg.lang = 'pt-BR'; msg.rate = 1.1;
+                    window.speechSynthesis.speak(msg);
+                }
+            },
+
+            broadcast: (msg) => { if(app.role === 'HOST') app.conn.forEach(c => c.conn.send(msg)); },
+            
+            copyID: () => {
+                const t = document.getElementById('myIdDisplay').value;
+                if(navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(t).then(()=>app.showToast("Copiado!"));
+                else {
+                    const x = document.createElement('textarea'); x.value=t; x.style.position='fixed'; document.body.appendChild(x); x.select();
+                    try { document.execCommand('copy'); app.showToast("Copiado!"); } catch(e){} document.body.removeChild(x);
+                }
+            },
+
+            confirmExit: () => { if(confirm("Sair do jogo?")) location.reload(); }
+        };
+
+        window.onload = app.init;
+    </script>
+</body>
+</html>
