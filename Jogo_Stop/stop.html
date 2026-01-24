@@ -867,6 +867,12 @@
             document.getElementById('result-screen').classList.add('hidden');
             document.getElementById('winner-screen').classList.add('hidden');
             document.getElementById('wait-modal').style.display = 'none';
+
+            // Garante que o timer comece oculto e SEM TEXTO (só aparece após sorteio)
+            const timerDisplay = document.getElementById('timer-display');
+            timerDisplay.style.visibility = 'hidden';
+            timerDisplay.innerText = "⏳ ??s"; // Limpa valor antigo
+
             document.getElementById('game-screen').classList.remove('hidden');
 
             // Animação de Sorteio
@@ -910,6 +916,11 @@
 
         function endGameUI(data) {
             if (uiTimerInterval) clearInterval(uiTimerInterval);
+
+            // Oculta timer imediatamente no fim da rodada
+            const timerDisplay = document.getElementById('timer-display');
+            timerDisplay.style.visibility = 'hidden';
+            timerDisplay.innerText = "";
 
             const reasonDisplay = document.getElementById('stop-reason-display');
             if (data && data.reason === 'TIME') {
