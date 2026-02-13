@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Retro Space Shooter</title>
+  <script type="module" crossorigin src="./assets/index-762ZvPjM.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-CUr1kXQG.css">
+</head>
+
+<body>
+    <div id="ui-layer">
+
+        <div id="cockpit-overlay" style="display: none;">
+            <div id="turret-reticle">
+                <div class="crosshair c-center"></div>
+                <div class="crosshair c-left"></div>
+                <div class="crosshair c-right"></div>
+                <div class="crosshair c-top"></div>
+                <div class="crosshair c-bottom"></div>
+            </div>
+
+            <img src="./cockpit.png" alt="Cockpit View" id="cockpit-img">
+        </div>
+
+        <div id="enemy-health-container" style="display: none;">
+            <div class="enemy-label">HOSTILE TARGET</div>
+            <div id="enemy-health-bar-bg">
+                <div id="enemy-health-bar-fill"></div>
+            </div>
+        </div>
+        <div id="game-hud" style="display: none;">
+            <div class="hud-top-right">
+                <span class="label">SCORE:</span> <span id="scoreVal">0</span>
+            </div>
+
+            <div id="warp-hud" style="display: none; position: absolute; top: 60px; right: 20px; text-align: right;">
+                <span class="label" style="color: #AD00FF;">RINGS:</span> <span id="warp-rings-val"
+                    style="color: #fff;">0</span>
+            </div>
+
+            <div id="ship-dashboard">
+                <div class="dash-header">SYSTEM STATUS</div>
+                <div id="stat-meteors" class="dash-row"><span class="icon">☄</span> <span class="label">METEORS:</span>
+                    <span class="val">0</span>
+                </div>
+                <div id="stat-enemies" class="dash-row"><span class="icon">☠</span> <span class="label">HOSTILES:</span>
+                    <span class="val">0</span>
+                </div>
+                <div id="stat-rings" class="dash-row"><span class="icon">◎</span> <span class="label">RINGS:</span>
+                    <span class="val">0</span>
+                </div>
+            </div>
+
+            <div id="message-notification" style="display: none;">
+                <div class="mail-icon">✉</div>
+                <div class="mail-text">INCOMING TRANSMISSION<br><small>PRESS [M]</small></div>
+            </div>
+
+            <div id="health-container">
+                <div class="label">INTEGRITY</div>
+                <div id="health-bar-bg">
+                    <div id="health-bar-fill"></div>
+                </div>
+                <div id="health-text">100%</div>
+            </div>
+
+            <div id="nav-panel" style="display: none;">
+                <div class="nav-header">NAV SYSTEM // TARGET LOCK</div>
+                <div class="nav-row">
+                    <span class="nav-label">COORDS:</span>
+                    <span id="nav-coords" class="nav-value">SEARCHING...</span>
+                </div>
+                <div class="nav-row">
+                    <span class="nav-label">SIGNAL:</span>
+                    <div class="signal-bar-bg">
+                        <div id="signal-bar-fill"></div>
+                    </div>
+                </div>
+                <div id="nav-status">ALIGNING SENSORS...</div>
+            </div>
+
+            <div id="compass-container">
+                <div id="mission-arrow" style="display: none;"></div>
+            </div>
+        </div>
+
+        <div id="main-menu" class="blue-menu">
+            <div class="menu-title">STAR CENTURION</div>
+            <div class="menu-subtitle">OPERATIONS MANUAL:</div>
+            <ul class="menu-controls">
+                <li>[ARROWS/WASD] PILOT SHIP</li>
+                <li>[SPACE] FIRE LASERS</li>
+                <li>[M] CHECK MESSAGES</li>
+            </ul>
+
+            <div id="settings-container"
+                style="margin-top: 20px; border: 1px solid #00ffff; padding: 10px; font-size: 0.8em; text-align: left; background: rgba(0, 20, 40, 0.8);">
+                <div class="settings-title">ACTIVE SYSTEMS</div>
+                <div class="checkbox-group">
+                    <label><input type="checkbox" id="cfg-search" checked> SIGNAL SEARCH</label>
+                    <label><input type="checkbox" id="cfg-combat" checked> DOGFIGHTS</label>
+                    <label><input type="checkbox" id="cfg-defense" checked> BASE DEFENSE</label>
+                    <label><input type="checkbox" id="cfg-warp" checked> SPATIAL ANOMALY</label>
+                </div>
+
+                <div class="settings-title" style="margin-top: 15px; color: #00ffff;">ADVANCED SETTINGS</div>
+                <div class="settings-grid"
+                    style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; text-align: left;">
+                    <label>SENSITIVITY: <input type="range" id="cfg-sensitivity" min="1" max="20" value="8"
+                            class="slider"></label>
+                    <label>WARP SPEED: <input type="range" id="cfg-warp-speed" min="1" max="50" value="20"
+                            class="slider"></label>
+                    <label>FIRE RATE: <input type="range" id="cfg-fire-rate" min="1" max="10" value="5"
+                            class="slider"></label>
+                    <label>DIFFICULTY:
+                        <select id="cfg-difficulty" style="background: #000; color: #fff; border: 1px solid #fff;">
+                            <option value="EASY">EASY</option>
+                            <option value="NORMAL" selected>NORMAL</option>
+                            <option value="HARD">HARD</option>
+                        </select>
+                    </label>
+                    <label style="grid-column: span 2; text-align: center;"><input type="checkbox" id="cfg-invert-y"
+                            checked> INVERT Y-AXIS (FLIGHT)</label>
+                </div>
+            </div>
+            <div class="menu-blink">PRESS [ENTER] TO START</div>
+        </div>
+
+        <div id="pause-menu" class="blue-menu" style="display: none;">
+            <div class="menu-title">SYSTEM PAUSED</div>
+            <div class="menu-options">
+                <div>PRESS [P] TO RESUME</div>
+                <div style="font-size: 0.8em; margin-top: 20px; color: #aaa;">RESTART: [F5]</div>
+            </div>
+        </div>
+
+        <div id="message-modal" class="green-terminal" style="display: none;">
+            <div class="term-header">/// SECURE TRANSMISSION ///</div>
+            <div class="term-body">
+                <p>> FROM: FLEET COMMAND</p>
+                <p>> TO: PILOT 465BZ900</p>
+                <p>--------------------------------</p>
+                <p>HIGH PRIORITY TARGET DETECTED IN YOUR SECTOR.</p>
+                <p>OBJECT TYPE: UNKNOWN CLASS-5</p>
+                <p>BOUNTY: 5000 CREDITS</p>
+                <p>--------------------------------</p>
+                <p>DO YOU WISH TO ENGAGE?</p>
+            </div>
+            <div class="term-actions">
+                <span class="key-hint">[S] ACCEPT MISSION</span>
+                <span class="key-hint reject">[R] DELETE MESSAGE</span>
+            </div>
+        </div>
+
+        <div id="target-reticle" style="display: none;">
+            <div class="reticle-box"></div>
+            <div class="reticle-dist">2500m</div>
+        </div>
+
+        <div id="game-message" style="display: none;"></div>
+    </div>
+
+
+
+
+</body>
+
+</html>
