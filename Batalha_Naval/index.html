@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Batalha Naval P2P</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Importação do WebRTC (PeerJS) via CDN -->
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+</head>
+
+<body>
+    <div id="app">
+        <header>
+            <h1>Batalha Naval</h1>
+            <div id="connection-status">Aguardando Ação</div>
+        </header>
+
+        <!-- Tela 1: Lobby Principal -->
+        <main id="lobby-screen" class="screen active">
+            <div class="card">
+                <h2>Lobby Principal</h2>
+                <div class="input-group">
+                    <label for="player-name">Seu Nome:</label>
+                    <input type="text" id="player-name" placeholder="Ex: Almirante">
+                </div>
+
+                <div class="input-group">
+                    <label for="game-mode">Modo de Jogo (Qtd de Navios):</label>
+                    <select id="game-mode">
+                        <option value="1">Modo 1 (4 Navios: 4, 3, 2, 1)</option>
+                        <option value="2">Modo 2 (6 Navios: 4, 3, 2, 2, 1, 1)</option>
+                        <option value="3">Modo 3 (10 Navios: 4, 3, 3, 2, 2, 2, 1, 1, 1, 1)</option>
+                    </select>
+                </div>
+
+                <div class="actions">
+                    <button id="btn-create" class="primary">Criar Partida (Host)</button>
+                    <div class="divider"><span>OU</span></div>
+                    <div class="join-group">
+                        <input type="text" id="join-id" placeholder="ID da Partida Host">
+                        <button id="btn-join" class="secondary">Entrar em Partida</button>
+                    </div>
+                </div>
+
+                <div id="host-info" class="hidden">
+                    <p>Partida criada! Compartilhe o código abaixo:</p>
+                    <div class="share-code-container">
+                        <code id="share-code">Gerando ID...</code>
+                        <button id="btn-copy" class="icon-btn" title="Copiar ID">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round">
+                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                            </svg>
+                        </button>
+                    </div>
+                    <p class="waiting-msg">Aguardando adversário conectar...</p>
+                </div>
+            </div>
+        </main>
+
+        <!-- Tela 2: Preparação da Frota -->
+        <main id="prep-screen" class="screen hidden">
+            <div class="prep-header">
+                <h2>Prepare sua Frota, <span id="prep-player-name"></span></h2>
+                <button id="btn-rotate" class="secondary">Orientação: <span
+                        id="rotate-status">Horizontal</span></button>
+            </div>
+
+            <div class="game-area">
+                <div class="grid-container">
+                    <h3>Seu Mapa <small>(Clique no navio posicionado para removê-lo)</small></h3>
+                    <div id="prep-grid" class="grid"></div>
+                </div>
+                <div class="grid-container fleet-container">
+                    <h3>Navios Disponíveis</h3>
+                    <div class="fleet-actions">
+                        <button id="btn-random" class="secondary" title="Espalhar Aleatoriamente">🎲 Aleatório</button>
+                        <button id="btn-reset" class="secondary" title="Limpar Mapa">🗑️ Limpar</button>
+                    </div>
+                    <div id="fleet-list"></div>
+                    <button id="btn-ready" class="primary" disabled>Iniciar Combate</button>
+                    <p id="ready-status" class="hidden">Aguardando adversário terminar de preparar...</p>
+                </div>
+            </div>
+        </main>
+
+        <!-- Tela 3: Combate -->
+        <main id="combat-screen" class="screen hidden">
+            <div class="combat-header">
+                <div class="turn-info">
+                    <h2 id="turn-indicator">Aguardando Início...</h2>
+                    <div id="timer-display" class="timer">Tempo: 30s</div>
+                </div>
+                <div class="score-info">
+                    <p>Seus Navios: <b id="ships-left">0</b> | Navios Inimigos: <b id="enemy-ships-left">0</b></p>
+                </div>
+            </div>
+
+            <div class="game-area combat-area">
+                <div class="grid-container">
+                    <h3>Mapa Inimigo <small>(Clique para Atirar)</small></h3>
+                    <div id="target-grid" class="grid target-grid"></div>
+                </div>
+                <div class="grid-container">
+                    <h3>Seu Mapa Base</h3>
+                    <div id="player-grid" class="grid"></div>
+                </div>
+            </div>
+
+            <!-- Modal Fim de Jogo -->
+            <div id="game-over-modal" class="modal hidden">
+                <div class="modal-content">
+                    <h2 id="game-over-title">Fim de Jogo</h2>
+                    <p id="game-over-msg"></p>
+                    <button id="btn-restart" class="primary">Voltar ao Lobby</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Toast de Notificação -->
+    <div id="toast-container"></div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
