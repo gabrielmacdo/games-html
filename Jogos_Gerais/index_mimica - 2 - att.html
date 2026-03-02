@@ -254,6 +254,15 @@
                 ACERTOU! (👍)
             </button>
         </div>
+        <div style="margin-top: 15px; display: flex; flex-direction: column; gap: 10px;">
+            <button class="btn btn-outline" style="padding: 10px;" onclick="GameApp.mostrarDica()" id="btn-dica">
+                ❓ Ver Dica
+            </button>
+            <div id="texto-dica" style="display: none; padding: 12px; background-color: #f1f5f9; border-radius: 8px; font-style: italic; color: var(--text-main); text-align: center; border: 1px dashed var(--text-muted);">
+            </div>
+        </div>
+            
+        
         
         <div style="margin-top: 15px; display: flex; gap: 10px;">
             <button class="btn btn-outline" style="padding: 10px;" onclick="GameApp.togglePause()" id="btn-pause">
@@ -280,41 +289,33 @@
 /**
  * DADOS MOCKADOS
  */
-const MOCK_DB = [
-    // FÁCIL (Verde)
-    { id: 1, palavra: "Cachorro", categoria: "Animais", dificuldade: "facil" },
-    { id: 2, palavra: "Bola", categoria: "Objetos", dificuldade: "facil" },
-    { id: 3, palavra: "Dormir", categoria: "Ações", dificuldade: "facil" },
-    { id: 4, palavra: "Banana", categoria: "Alimentos", dificuldade: "facil" },
-    { id: 5, palavra: "Carro", categoria: "Transporte", dificuldade: "facil" },
-    { id: 6, palavra: "Chorar", categoria: "Ações", dificuldade: "facil" },
-    { id: 7, palavra: "Avião", categoria: "Transporte", dificuldade: "facil" },
-    { id: 8, palavra: "Telefone", categoria: "Objetos", dificuldade: "facil" },
-    { id: 10, palavra: "Futebol", categoria: "Esportes", dificuldade: "facil" },
-    { id: 11, palavra: "Bebê", categoria: "Pessoas", dificuldade: "facil" },
-    { id: 12, palavra: "Escovar os dentes", categoria: "Ações", dificuldade: "facil" },
-    
-    // MÉDIO (Laranja)
-    { id: 16, palavra: "Médico", categoria: "Profissões", dificuldade: "medio" },
-    { id: 17, palavra: "Pintar um quadro", categoria: "Ações", dificuldade: "medio" },
-    { id: 18, palavra: "Elefante", categoria: "Animais", dificuldade: "medio" },
-    { id: 19, palavra: "Astronauta", categoria: "Profissões", dificuldade: "medio" },
-    { id: 20, palavra: "Acampar", categoria: "Lazer", dificuldade: "medio" },
-    { id: 22, palavra: "Guitarra", categoria: "Instrumentos", dificuldade: "medio" },
-    { id: 23, palavra: "Tropeçar", categoria: "Ações", dificuldade: "medio" },
-    { id: 24, palavra: "Cozinhar", categoria: "Ações", dificuldade: "medio" },
-    
-    // DIFÍCIL (Vermelho)
-    { id: 31, palavra: "Harry Potter", categoria: "Personagens", dificuldade: "dificil" },
-    { id: 32, palavra: "Evolução", categoria: "Conceitos", dificuldade: "dificil" },
-    { id: 33, palavra: "Gravidade", categoria: "Ciência", dificuldade: "dificil" },
-    { id: 35, palavra: "Nostalgia", categoria: "Sentimentos", dificuldade: "dificil" },
-    { id: 36, palavra: "Internet", categoria: "Tecnologia", dificuldade: "dificil" },
-    { id: 37, palavra: "Democracia", categoria: "Conceitos", dificuldade: "dificil" },
-    { id: 40, palavra: "Eclipse", categoria: "Natureza", dificuldade: "dificil" },
-    { id: 48, palavra: "Wi-Fi caindo", categoria: "Situações", dificuldade: "dificil" },
-    { id: 42, palavra: "Titanic", categoria: "Filmes", dificuldade: "dificil" }
-];
+let MOCK_DB = []; // Inicia vazio
+
+// Função para carregar as palavras do JSON externo
+async function carregarBancoDePalavras() {
+    try {
+        const response = await fetch('palavras.json');
+        if (!response.ok) throw new Error('Erro ao carregar o arquivo JSON');
+        
+        MOCK_DB = await response.json();
+        console.log(`Sucesso: ${MOCK_DB.length} palavras carregadas.`);
+        
+        // Ativa o botão de Iniciar Jogo após carregar as palavras
+        document.querySelector('.btn-primary').disabled = false;
+        document.querySelector('.btn-primary').textContent = "INICIAR JOGO";
+    } catch (error) {
+        console.error("Falha ao carregar as palavras:", error);
+        alert("Erro ao carregar o banco de palavras. Você está rodando em um servidor local?");
+    }
+}
+
+// Bloqueia o botão até os dados carregarem
+document.addEventListener('DOMContentLoaded', () => {
+    const btnIniciar = document.querySelector('.btn-primary');
+    btnIniciar.disabled = true;
+    btnIniciar.textContent = "Carregando palavras...";
+    carregarBancoDePalavras();
+});
 
 /**
  * LÓGICA DO JOGO (GameApp)
@@ -374,6 +375,14 @@ const GameApp = (() => {
         }
         return array;
     }
+
+    function mostrarDica() {
+        const dicaEl = document.getElementById('texto-dica');
+        dicaEl.textContent = "Dica: " + state.currentWord.dica;
+        dicaEl.style.display = 'block';
+    }
+
+// Lembre-se de esconder a dica ( display = 'none' ) dentro da função drawNextWord() para a próxima palavra!
 
     // --- CORE FUNCTIONS ---
     function initGame() {
@@ -456,6 +465,8 @@ const GameApp = (() => {
 
         const wordObj = state.deck.pop();
         state.currentWord = wordObj;
+
+        document.getElementById('texto-dica').style.display = 'none';
         
         ui.wordText.textContent = wordObj.palavra;
         ui.wordCat.textContent = wordObj.categoria;
@@ -602,7 +613,7 @@ const GameApp = (() => {
         showScreen('results');
     }
 
-    return { initGame, startRound, correctGuess, skipWord, togglePause, endRoundManually };
+    return { initGame, startRound, correctGuess, skipWord, togglePause, endRoundManually, mostrarDica };
 
 })();
 </script>
