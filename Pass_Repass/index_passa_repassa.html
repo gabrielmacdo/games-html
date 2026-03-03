@@ -1,0 +1,1075 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Quiz Master: Passa ou Repassa</title>
+    <style>
+        /* --- CSS VARIABLES & RESET (Herdados do Mímica Master) --- */
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4338ca;
+            --secondary: #ec4899;
+            --success: #22c55e;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --background: #f8fafc;
+            --surface: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.1);
+            --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1);
+            --radius: 16px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Roboto, sans-serif; }
+
+        body {
+            background-color: var(--background);
+            color: var(--text-main);
+            height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .screen {
+            flex: 1; display: none; flex-direction: column; padding: 24px;
+            animation: fadeIn 0.3s ease-in-out; overflow-y: auto;
+        }
+        .screen.active { display: flex; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- TYPOGRAPHY & CARDS --- */
+        h1 { font-size: 1.8rem; color: var(--primary); text-align: center; margin-bottom: 20px; font-weight: 800; }
+        h2 { font-size: 1.4rem; margin-bottom: 10px; color: var(--text-main); text-align: center; }
+        
+        .card {
+            background: var(--surface); border-radius: var(--radius); padding: 24px;
+            box-shadow: var(--shadow-md); margin-bottom: 20px; text-align: center;
+        }
+
+        /* --- INPUTS & BUTTONS --- */
+        .input-group { margin-bottom: 20px; text-align: left; }
+        .label { font-size: 0.9rem; color: var(--text-muted); font-weight: 600; margin-bottom: 8px; display: block; }
+        input[type="text"], input[type="number"] {
+            width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 12px;
+            font-size: 1.2rem; outline: none; transition: border-color 0.2s; text-align: center;
+        }
+        input:focus { border-color: var(--primary); }
+
+        .btn {
+            width: 100%; padding: 16px; border: none; border-radius: 12px;
+            font-size: 1.1rem; font-weight: 700; cursor: pointer;
+            transition: transform 0.1s, opacity 0.2s; display: flex; align-items: center; justify-content: center; gap: 10px;
+        }
+        .btn:active { transform: scale(0.98); }
+        .btn-primary { background: var(--primary); color: white; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3); }
+        .btn-success { background: var(--success); color: white; }
+        .btn-warning { background: var(--warning); color: white; }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-outline { background: transparent; border: 2px solid var(--text-muted); color: var(--text-muted); }
+
+        /* --- BUZZER (Botão Gigante) --- */
+        .buzzer-container {
+            flex: 1; display: flex; justify-content: center; align-items: center;
+        }
+        .buzzer-btn {
+            width: 220px; height: 220px; border-radius: 50%; border: none;
+            background: var(--danger); color: white; font-size: 2.5rem; font-weight: 900;
+            box-shadow: 0 15px 0 #b91c1c, 0 25px 20px rgba(0,0,0,0.3);
+            cursor: pointer; transition: all 0.1s; text-transform: uppercase;
+        }
+        .buzzer-btn:active {
+            transform: translateY(10px); box-shadow: 0 5px 0 #b91c1c, 0 10px 10px rgba(0,0,0,0.3);
+        }
+        .buzzer-btn.disabled {
+            background: #94a3b8; box-shadow: 0 15px 0 #64748b; cursor: not-allowed; opacity: 0.7;
+        }
+
+        /* --- GAME PANELS --- */
+        .score-board {
+            display: flex; justify-content: space-around; background: var(--text-main); color: white;
+            padding: 15px; border-radius: var(--radius); margin-bottom: 20px; font-weight: bold;
+        }
+        .score-team { display: flex; flex-direction: column; align-items: center; }
+        .score-value { font-size: 1.8rem; color: #fcd34d; }
+
+        .question-box {
+            background: #fff; border: 2px dashed var(--primary); border-radius: var(--radius);
+            padding: 20px; margin-bottom: 20px; text-align: center; font-size: 1.3rem; font-weight: bold;
+        }
+
+        .options-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .options-grid .btn { padding: 20px 10px; font-size: 1rem; }
+    </style>
+    <script src="peerjs.min.js"></script>
+</head>
+<body>
+
+<div class="app-container">
+
+    <section id="screen-home" class="screen active">
+        <button class="btn btn-outline" style="position: absolute; top: 20px; right: 20px; width: 50px; height: 50px; border-radius: 50%; padding: 0; font-size: 1.5rem; display: flex; align-items: center; justify-content: center; border: 2px solid var(--text-muted);" onclick="showScreen('screen-instructions')">
+            ❓
+        </button>
+        <h1>⚡ Quiz Master</h1>
+    
+        <div class="card" style="margin-top: auto; margin-bottom: auto;">
+            <h2>Bem-vindo!</h2>
+            <p style="color: var(--text-muted); margin-bottom: 30px;">Escolha como você vai participar deste jogo.</p>
+            
+            <button class="btn btn-primary" style="margin-bottom: 15px;" onclick="GameNetwork.initHost()">
+                📺 Sou o Apresentador (Criar Sala)
+            </button>
+            <button class="btn btn-outline" onclick="showScreen('screen-lobby-player')">
+                📱 Sou um Jogador (Entrar na Sala)
+            </button>
+        </div>
+    </section>
+    <section id="screen-instructions" class="screen">
+        <h1>📖 Como Jogar</h1>
+            
+        <div class="card" style="text-align: left; overflow-y: auto; max-height: 70vh;">
+            <p style="margin-bottom: 15px; color: var(--text-muted);">
+                O <strong>Quiz Master</strong> é um jogo de perguntas e respostas para 1 Apresentador e 2 Times. O Apresentador cria a sala e os times entram usando o código gerado.
+            </p>
+                <h3 style="color: var(--primary); margin-top: 20px; margin-bottom: 10px;">🎙️ Modo 1: Passa ou Repassa (Voz)</h3>
+            <p style="font-size: 0.95rem; margin-bottom: 10px;">
+                Neste modo, não há alternativas na tela. O jogo testa o conhecimento "na ponta da língua".
+            </p>
+            <ul style="font-size: 0.9rem; margin-left: 20px; margin-bottom: 15px; color: var(--text-muted);">
+                <li>O Apresentador lê a pergunta em voz alta.</li>
+                <li>Os times disputam quem bate no <strong>BUZZER</strong> primeiro.</li>
+                <li>Quem bater ganha o direito de <strong>Responder em voz alta</strong> ou <strong>Passar</strong> a vez.</li>
+                <li>Se passar, o outro time pode <strong>Responder</strong> ou <strong>Repassar</strong> de volta.</li>
+                <li>Se repassar, o primeiro time é obrigado a responder (PAGA!).</li>
+            </ul>
+            <div style="background: #f1f5f9; padding: 10px; border-radius: 8px; font-size: 0.85rem; border-left: 4px solid var(--warning);">
+                <strong>Exemplo:</strong> A pergunta é "Qual a capital do Brasil?". O Time A bate primeiro, mas não lembra. Clica em <em>Passa</em>. O Time B recebe a vez, também não sabe e clica em <em>Repassa</em>. O Time A é obrigado a dar um palpite. O Apresentador ouve e clica em "Acertou" ou "Errou" no painel dele.
+            </div>
+
+            <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 25px 0;">
+
+            <h3 style="color: var(--primary); margin-bottom: 10px;">📱 Modo 2: Múltipla Escolha (Tela)</h3>
+            <p style="font-size: 0.95rem; margin-bottom: 10px;">
+                Neste modo, o jogo funciona como um "Show do Milhão". O próprio sistema valida quem acertou.
+            </p>
+            <ul style="font-size: 0.9rem; margin-left: 20px; margin-bottom: 15px; color: var(--text-muted);">
+                <li>O Apresentador sorteia a pergunta e o Host seleciona o Modo 2.</li>
+                <li>Ao baterem no Buzzer, o time mais rápido não usa a voz. A tela do celular deles exibirá <strong>4 opções (A, B, C e D)</strong>.</li>
+                <li>O time escolhe a alternativa na própria tela.</li>
+                <li>Após um suspense dramático de 3 segundos, o sistema revela automaticamente se eles acertaram ou erraram!</li>
+            </ul>
+            <div style="background: #f1f5f9; padding: 10px; border-radius: 8px; font-size: 0.85rem; border-left: 4px solid var(--success);">
+                <strong>Exemplo:</strong> A pergunta é "Quanto é 2+2?". O Time B bate primeiro. Aparecem as opções no celular deles: A) 1, B) 3, C) 4, D) 5. Eles clicam na opção "C". O sistema calcula, toca o som de acerto e soma os pontos sozinhos!
+            </div>
+        </div>
+
+            <button class="btn btn-primary" style="margin-top: auto;" onclick="showScreen('screen-home')">
+                ⬅️ Voltar para o Início
+            </button>
+    </section>
+
+    <section id="screen-lobby-player" class="screen">
+        <h1>Entrar na Sala</h1>
+        <div class="card">
+            <div class="input-group">
+                <label class="label">Código da Sala</label>
+                <input type="text" id="input-room-code" placeholder="Ex: ABCD" style="text-transform: uppercase;">
+            </div>
+            <div class="input-group">
+                <label class="label">Nome do seu Time</label>
+                <input type="text" id="input-team-name" placeholder="Ex: Os Imbatíveis">
+            </div>
+            <button class="btn btn-success" onclick="conectarJogador()">CONECTAR</button>
+        </div>
+        <button class="btn btn-outline" onclick="showScreen('screen-home')">Voltar</button>
+    </section>
+
+    <section id="screen-game-player" class="screen">
+        <div style="text-align: center; margin-bottom: 10px;">
+            <span style="font-weight: bold; color: var(--text-muted);" id="player-team-name">Time: Os Imbatíveis</span>
+        </div>
+
+        <div class="buzzer-container" id="player-buzzer-area">
+            <button class="buzzer-btn disabled" id="btn-buzzer" onclick="GameNetwork.playerHitBuzzer()">BATER!</button>
+        </div>
+
+        <div id="player-actions-area" style="display: none; flex-direction: column; gap: 15px; margin-top: auto;">
+            <button id="btn-responder" class="btn btn-primary" onclick="GameNetwork.sendAction('responder')">Responder Agora</button>
+            <button id="btn-passa" class="btn btn-warning" onclick="GameNetwork.sendAction('passa')">Passa</button>
+            <button id="btn-repassa" class="btn btn-danger" onclick="GameNetwork.sendAction('repassa')">Repassa</button>
+            
+            <div class="options-grid" id="player-options-area" style="display: none;">
+                <button id="btn-opt-0" class="btn btn-outline" onclick="GameNetwork.sendAnswer(0)"></button>
+                <button id="btn-opt-1" class="btn btn-outline" onclick="GameNetwork.sendAnswer(1)"></button>
+                <button id="btn-opt-2" class="btn btn-outline" onclick="GameNetwork.sendAnswer(2)"></button>
+                <button id="btn-opt-3" class="btn btn-outline" onclick="GameNetwork.sendAnswer(3)"></button>
+            </div>
+        </div>
+    </section>
+
+    <section id="screen-lobby-host" class="screen">
+        <h1>Sala Criada!</h1>
+        <div class="card">
+            <p class="label">Código para os jogadores entrarem:</p>
+            <h2 style="font-size: 3rem; color: var(--primary); letter-spacing: 5px;">X7K9</h2>
+        </div>
+        
+        <div class="card" style="flex: 1;">
+            <h3>Times Conectados:</h3>
+            <ul id="host-teams-list" style="list-style: none; margin-top: 15px; color: var(--text-muted);">
+                <li style="padding: 10px; border-bottom: 1px solid #e2e8f0;">⏳ Aguardando Time 1...</li>
+                <li style="padding: 10px;">⏳ Aguardando Time 2...</li>
+            </ul>
+        </div>
+        <div class="input-group">
+            <label class="label" style="text-align: center;">🏆 Meta para Vencer (Pontos)</label>
+            <input type="number" id="config-target-score" value="50" min="10" step="10">
+        </div>
+        <button id="btn-start-game" class="btn btn-primary disabled" onclick="GameNetwork.startGame()">COMEÇAR JOGO</button>
+    </section>
+
+    <section id="screen-game-host" class="screen">
+        
+        <div class="score-board">
+            <div class="score-team">
+                <span id="host-team1-name">Time 1</span>
+                <span id="host-team1-score" class="score-value">0</span>
+            </div>
+            <div class="score-team">
+                <span id="host-team2-name">Time 2</span>
+                <span id="host-team2-score" class="score-value">0</span>
+            </div>
+        </div>
+
+        <div class="question-box">
+            <span style="font-size: 0.9rem; color: var(--text-muted); display: block; margin-bottom: 10px;">Pergunta 1 (Ciências)</span>
+            Qual é o maior planeta do nosso sistema solar?
+            
+            <div style="margin-top: 15px; font-size: 1.1rem; color: var(--success); font-weight: bold; padding: 10px; background: #dcfce7; border-radius: 8px;">
+                Resposta Correta: Júpiter
+            </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 10px; margin-top: auto;">
+            <div style="margin-bottom: 5px; background: #f1f5f9; padding: 10px; border-radius: 8px;">
+                <label class="label" style="margin-bottom: 5px; color: var(--primary-dark);">⚙️ Modo desta rodada:</label>
+                <select id="config-modo" style="width: 100%; padding: 8px; border-radius: 8px; font-weight: bold;">
+                    <option value="1">Modo 1: Passa ou Repassa (Voz)</option>
+                    <option value="2">Modo 2: Múltipla Escolha (Tela)</option>
+                </select>
+            </div>
+            <button class="btn btn-primary" onclick="GameNetwork.hostUnlockBuzzer()">Liberar Buzzer na Tela dos Jogadores</button>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
+                <button class="btn btn-success" onclick="GameNetwork.evaluateAnswer(true)">✔️ Acertou (+10 pts)</button>
+                <button class="btn btn-danger" onclick="GameNetwork.evaluateAnswer(false)">❌ Errou (-5 pts)</button>
+            </div>
+            
+            <button class="btn btn-outline" style="margin-top: 10px;" onclick="GameNetwork.exibirProximaPergunta()">⏭️ Próxima Pergunta</button>
+        </div>
+    </section>
+
+    <section id="screen-results" class="screen">
+        <h1>🏆 Fim de Jogo!</h1>
+        <div class="card">
+            <h2>Placar Final</h2>
+            <div id="podium-results" style="display: flex; flex-direction: column; gap: 15px; margin: 20px 0; font-size: 1.5rem;">
+                </div>
+        </div>
+        <button class="btn btn-primary" onclick="location.reload()">Jogar Novamente</button>
+    </section>
+
+</div>
+
+<script>
+
+/**
+ * GERENCIADOR DE ÁUDIO (Sintetizador Nativo)
+ */
+const SoundManager = (() => {
+    let audioCtx = null;
+
+    // Inicia o contexto de áudio apenas após a primeira interação do usuário (Regra dos navegadores)
+    function init() {
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+    }
+
+    // Função base para criar os "bipes"
+    function playTone(freq, type, duration, vol = 0.1) {
+        init();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+    }
+
+    return {
+        // Som grave e forte de quem bateu primeiro
+        buzzer: () => { playTone(150, 'sawtooth', 0.5, 0.3); },
+        
+        // Som feliz de "Ding-Ding"
+        acerto: () => { 
+            playTone(600, 'sine', 0.2, 0.2); 
+            setTimeout(() => playTone(800, 'sine', 0.4, 0.2), 150);
+        },
+        
+        // Som triste de "Fom-Fom"
+        erro: () => { 
+            playTone(300, 'sawtooth', 0.3, 0.2); 
+            setTimeout(() => playTone(250, 'sawtooth', 0.5, 0.2), 200);
+        },
+        
+        // Clique rápido para o suspense
+        ticTac: () => { playTone(1000, 'square', 0.05, 0.05); }
+    };
+})();
+
+/**
+ * GERENCIADOR DE REDE E CONEXÃO (PeerJS)
+ */
+const GameNetwork = (() => {
+    // Variáveis do Jogo
+    let bancoDePerguntas = [];
+    let perguntaAtual = null;
+    let metaDePontos = 50;
+
+    let currentMode = 1; 
+    let currentOptions = [];
+
+    let peer = null;
+    let myRole = null; // 'host' ou 'player'
+    
+    // Variáveis do Host
+    let hostConnections = {}; // Guarda as conexões dos times (ex: { "id-do-peer": conexao })
+    let roomCode = "";
+    let isBuzzerLocked = true; // O Host controla se o botão está travado
+
+    let teamScores = {}; // Vai guardar a pontuação: { "Time A": 0, "Time B": 0 }
+    let currentAnsweringTeam = null; // Guarda quem está respondendo agora
+
+    // Variáveis do Jogador
+    let hostConnection = null; // A conexão única do jogador com o host
+    let myTeamName = ""; // Guarda o nome do próprio time
+
+    // ==========================================
+    // CAMADA 1: BLOQUEIO DE SAÍDA ACIDENTAL
+    // ==========================================
+    window.addEventListener('beforeunload', function (e) {
+        // Se a pessoa já iniciou como Host ou Player, o navegador emite o alerta
+        if (myRole !== null) {
+            e.preventDefault();
+            e.returnValue = ''; // É isso que obriga o navegador a mostrar a janelinha de aviso
+        }
+    });
+
+    // --- FUNÇÕES DO HOST (APRESENTADOR) ---
+    function initHost() {
+        myRole = 'host';
+        
+        // Gera um código de sala aleatório de 4 letras (ex: ABCD)
+        roomCode = Math.random().toString(36).substring(2, 6).toUpperCase();
+        const customPeerId = 'QUIZMASTER-' + roomCode;
+
+        console.log("Iniciando Host com ID:", customPeerId);
+        peer = new Peer(customPeerId); // Cria o Peer com ID fixo baseado no código
+
+        peer.on('open', (id) => {
+            console.log('Host criado com sucesso!');
+            // Atualiza a UI para mostrar o código da sala
+            document.querySelector('#screen-lobby-host h2').textContent = roomCode;
+            showScreen('screen-lobby-host');
+        });
+
+        // Quando um jogador tentar se conectar...
+        peer.on('connection', (conn) => {
+            conn.on('open', () => {
+                console.log('Nova conexão estabelecida:', conn.peer);
+                hostConnections[conn.peer] = conn;
+            });
+
+            // Quando o Host receber uma mensagem do jogador
+            conn.on('data', (data) => {
+                handleIncomingData(data, conn);
+            });
+
+            conn.on('close', () => {
+                console.log('Conexão perdida com:', conn.peer);
+                delete hostConnections[conn.peer];
+                atualizarListaDeTimesNoLobby();
+            });
+        });
+
+        peer.on('error', (err) => {
+            console.error('Erro no Host:', err);
+            alert("Erro na conexão: " + err.type);
+        });
+    }
+
+    // --- FUNÇÕES DO JOGADOR (CLIENTE) ---
+    function initPlayer(inputRoomCode, teamName) {
+        myTeamName = teamName;
+        myRole = 'player';
+
+        // CAMADA 2: Salva os dados na memória do navegador (sessão)
+        sessionStorage.setItem('quizRoomCache', inputRoomCode);
+        sessionStorage.setItem('quizTeamCache', teamName);
+
+        peer = new Peer(); // Jogador pode ter um ID aleatório gerado pelo PeerJS
+
+        peer.on('open', (id) => {
+            console.log('Meu ID de jogador:', id);
+            
+            // Tenta conectar ao ID do Host usando o código digitado
+            const targetHostId = 'QUIZMASTER-' + inputRoomCode.toUpperCase();
+            console.log('Tentando conectar ao Host:', targetHostId);
+            
+            hostConnection = peer.connect(targetHostId, { reliable: true });
+
+            hostConnection.on('open', () => {
+                console.log('Conectado ao Host com sucesso!');
+                
+                // Muda para a tela do jogo e atualiza o nome
+                document.getElementById('player-team-name').textContent = "Time: " + teamName;
+                showScreen('screen-game-player');
+
+                // Envia o primeiro Payload dizendo quem é
+                sendToHost({
+                    type: 'JOIN_ROOM',
+                    payload: { nome_time: teamName }
+                });
+            });
+
+            // Quando o Jogador receber uma mensagem do Host
+            hostConnection.on('data', (data) => {
+                handleIncomingData(data);
+            });
+
+            hostConnection.on('close', () => {
+                alert('A conexão com o Apresentador foi perdida.');
+                showScreen('screen-home');
+            });
+        });
+
+        peer.on('error', (err) => {
+            console.error('Erro no Jogador:', err);
+            if (err.type === 'peer-unavailable') {
+                alert("Sala não encontrada! Verifique o código.");
+            }
+        });
+    }
+
+    // --- ATUALIZA A TELA DO LOBBY ---
+    function atualizarListaDeTimesNoLobby() {
+        const ul = document.getElementById('host-teams-list');
+        const btnStart = document.getElementById('btn-start-game');
+        
+        // Pega os nomes de todos os times conectados no momento
+        const times = Object.values(hostConnections).map(c => c.teamName).filter(nome => nome); 
+        
+        ul.innerHTML = ''; // Limpa a lista atual
+        
+        // Renderiza o Slot 1
+        if (times.length > 0) {
+            ul.innerHTML += `<li style="padding: 10px; border-bottom: 1px solid #e2e8f0; color: var(--success);">✅ <strong>${times[0]}</strong> conectado!</li>`;
+        } else {
+            ul.innerHTML += `<li style="padding: 10px; border-bottom: 1px solid #e2e8f0;">⏳ Aguardando Time 1...</li>`;
+        }
+        
+        // Renderiza o Slot 2
+        if (times.length > 1) {
+            ul.innerHTML += `<li style="padding: 10px; color: var(--success);">✅ <strong>${times[1]}</strong> conectado!</li>`;
+            
+            // Os dois chegaram? Libera o botão de começar!
+            btnStart.classList.remove('disabled');
+        } else {
+            ul.innerHTML += `<li style="padding: 10px;">⏳ Aguardando Time 2...</li>`;
+            btnStart.classList.add('disabled');
+        }
+    }
+
+    // --- FUNÇÃO DE INICIAR O JOGO ---
+    function startGame() {
+        if (myRole === 'host') {
+            const times = Object.values(hostConnections).map(c => c.teamName).filter(nome => nome);
+            
+            if (times.length < 2) {
+                alert("Aguarde os dois times se conectarem para começar!");
+                return;
+            }
+            // Zera a pontuação no sistema
+            teamScores[times[0]] = 0;
+            teamScores[times[1]] = 0;
+            // Zera a pontuação na tela
+            document.getElementById('host-team1-score').textContent = "0";
+            document.getElementById('host-team2-score').textContent = "0";
+
+            // Atualiza os nomes no placar oficial do Host
+            document.getElementById('host-team1-name').textContent = times[0];
+            document.getElementById('host-team2-name').textContent = times[1];
+
+            // Muda a tela do Host para o painel de controle
+            showScreen('screen-game-host');
+            // Lê a meta escolhida pelo Apresentador
+            metaDePontos = parseInt(document.getElementById('config-target-score').value) || 50;
+
+            // Avisa os jogadores que o jogo começou
+            broadcastToPlayers({
+                type: 'GAME_STARTED',
+                payload: { times: times }
+            });
+            exibirProximaPergunta();
+        }
+    }
+
+    // --- ROTEADOR DE MENSAGENS (O Cérebro) ---
+    function handleIncomingData(message, conn = null) {
+        console.log("Recebido:", message);
+
+        switch (message.type) {
+            
+            // ==========================================
+            // MENSAGENS RECEBIDAS PELO HOST
+            // ==========================================
+            case 'JOIN_ROOM':
+                if (myRole === 'host') {
+                    const nomeTime = message.payload.nome_time;
+                    console.log(`O time ${nomeTime} entrou na sala!`);
+                    
+                    // Vincula o nome do time à conexão para sabermos quem é quem
+                    conn.teamName = nomeTime; 
+                    
+                    // Atualiza a tela do Apresentador
+                    atualizarListaDeTimesNoLobby();
+                }
+                break;
+
+            case 'BUZZER_HIT':
+                if (myRole === 'host') {
+                    // O primeiro que bater trava o Buzzer para os outros!
+                    if (!isBuzzerLocked) {
+                        isBuzzerLocked = true; // Trava! Ninguém mais pode bater.
+                        SoundManager.buzzer();
+                        currentAnsweringTeam = message.payload.time;
+                        const vencedor = message.payload.time;
+                        console.log(`BINGO! O time ${vencedor} foi mais rápido!`);
+                        
+                        // Atualiza a tela do Apresentador
+                        document.querySelector('.question-box').innerHTML += `<div style="margin-top: 10px; color: var(--danger); font-weight: bold;">🚨 ${vencedor} BATEU!</div>`;
+                        
+                        // Avisa todos os times quem ganhou a corrida
+                        broadcastToPlayers({
+                            type: 'BUZZER_RESULT',
+                            payload: { vencedor: vencedor }
+                        });
+                    }
+                }
+                break;
+
+            // ==========================================
+            // MENSAGENS RECEBIDAS PELO JOGADOR
+            // ==========================================
+            case 'UNLOCK_BUZZER':
+                if (myRole === 'player') {
+                    // O Host mandou o sinal verde!
+                    const btnBuzzer = document.getElementById('btn-buzzer');
+                    btnBuzzer.classList.remove('disabled');
+                    btnBuzzer.textContent = "BATER!";
+                    btnBuzzer.style.backgroundColor = "var(--danger)";
+                    document.getElementById('player-actions-area').style.display = 'none'; // Esconde os botões de ação se estiverem visíveis
+                }
+                break;
+
+            case 'BUZZER_RESULT':
+                if (myRole === 'player') {
+                    const ganhadorDaVez = message.payload.vencedor;
+                    const btnBuzzer = document.getElementById('btn-buzzer');
+                    btnBuzzer.classList.add('disabled');
+
+                    // Verifica se fomos nós que ganhamos
+                    if (ganhadorDaVez === myTeamName) {
+                        btnBuzzer.textContent = "SUA VEZ!";
+                        btnBuzzer.style.backgroundColor = "var(--success)";
+                        document.getElementById('player-actions-area').style.display = 'flex';
+                        
+                        if (currentMode === 1) {
+                            // MODO 1: Mostra os botões de Passa/Repassa
+                            document.getElementById('btn-responder').style.display = 'block';
+                            document.getElementById('btn-responder').textContent = "Responder Agora";
+                            document.getElementById('btn-passa').style.display = 'block';
+                            document.getElementById('btn-repassa').style.display = 'none';
+                            document.getElementById('player-options-area').style.display = 'none';
+                        } else {
+                            // MODO 2: Mostra as 4 alternativas!
+                            document.getElementById('btn-responder').style.display = 'none';
+                            document.getElementById('btn-passa').style.display = 'none';
+                            document.getElementById('btn-repassa').style.display = 'none';
+                            
+                            const optionsArea = document.getElementById('player-options-area');
+                            optionsArea.style.display = 'grid';
+                            
+                            // Popula os 4 botões com o texto do Banco de Dados
+                            const letras = ['A', 'B', 'C', 'D'];
+                            for(let i = 0; i < 4; i++) {
+                                const btn = document.getElementById('btn-opt-'+i);
+                                if(currentOptions[i]) {
+                                    btn.textContent = `${letras[i]}) ${currentOptions[i]}`;
+                                    btn.style.display = 'block';
+                                } else {
+                                    btn.style.display = 'none';
+                                }
+                            }
+                        }
+                    }
+                    else {
+                        btnBuzzer.textContent = "BLOQUEADO!";
+                        btnBuzzer.style.backgroundColor = "#94a3b8";
+                        
+                        // Esconde as opções, porque a vez é do outro time
+                        document.getElementById('player-actions-area').style.display = 'none';
+                    }
+                }
+                break;
+            
+            case 'GAME_STARTED':
+                if (myRole === 'player') {
+                    console.log("O Apresentador iniciou a partida!");
+                    
+                    // Garante que o buzzer inicie travado e com texto de espera
+                    const btnBuzzer = document.getElementById('btn-buzzer');
+                    btnBuzzer.classList.add('disabled');
+                    btnBuzzer.textContent = "AGUARDE...";
+                    btnBuzzer.style.backgroundColor = "#94a3b8";
+                    
+                    // Opcional: se o celular vibrar, dá um alerta físico de que começou!
+                    if (navigator.vibrate) navigator.vibrate(200);
+                }
+                break;
+            case 'NOVA_PERGUNTA':
+                if (myRole === 'player') {
+                    // Salva o modo e as opções que vieram do Host
+                    currentMode = message.payload.modo;
+                    currentOptions = message.payload.pergunta.opcoes || [];
+
+                    // Esconde os botões de ação e reseta o Buzzer
+                    document.getElementById('player-actions-area').style.display = 'none';
+                    document.getElementById('player-options-area').style.display = 'none'; // Garante que opções comecem ocultas
+
+                    const btnBuzzer = document.getElementById('btn-buzzer');
+                    btnBuzzer.classList.add('disabled');
+                    btnBuzzer.textContent = "AGUARDE...";
+                    btnBuzzer.style.backgroundColor = "#94a3b8";
+                }
+                break;
+            // ==========================================
+            // QUANDO O JOGADOR CLICA EM PASSA/REPASSA
+            // ==========================================
+            case 'PLAYER_ACTION':
+                if (myRole === 'host') {
+                    const acao = message.payload.acao;
+                    const timeAcao = message.payload.time;
+                    
+                    // Descobre quem é o OUTRO time para passar a bola
+                    const todosOsTimes = Object.values(hostConnections).map(c => c.teamName).filter(n => n);
+                    const outroTime = todosOsTimes.find(t => t !== timeAcao);
+                    const questionBox = document.querySelector('.question-box');
+
+                    if (acao === 'passa' || acao === 'repassa') {
+                    currentAnsweringTeam = outroTime;
+                    }
+                    if (acao === 'responder') {
+                        questionBox.innerHTML += `<div style="margin-top: 10px; color: var(--primary); font-weight: bold; font-size: 1.2rem;">🗣️ ${timeAcao} vai responder! (Apresentador, valide a resposta)</div>`;
+                        
+                    } else if (acao === 'passa') {
+                        questionBox.innerHTML += `<div style="margin-top: 10px; color: var(--warning); font-weight: bold;">➡️ ${timeAcao} PASSOU a pergunta para ${outroTime}!</div>`;
+                        
+                        // Passa a vez para o time B, no estágio de "Repassa"
+                        broadcastToPlayers({
+                            type: 'CHANGE_TURN',
+                            payload: { novo_turno: outroTime, estagio: 'repassa' }
+                        });
+                        
+                    } else if (acao === 'repassa') {
+                        questionBox.innerHTML += `<div style="margin-top: 10px; color: var(--danger); font-weight: bold;">🔄 ${timeAcao} REPASSOU! ${outroTime} PAGA!</div>`;
+                        
+                        // Devolve a vez para o time A, no estágio obrigatório de "Paga"
+                        broadcastToPlayers({
+                            type: 'CHANGE_TURN',
+                            payload: { novo_turno: outroTime, estagio: 'paga' }
+                        });
+                    }
+                }
+                break;
+
+            // ==========================================
+            // QUANDO O HOST MUDA DE QUEM É A VEZ
+            // ==========================================
+            case 'CHANGE_TURN':
+                if (myRole === 'player') {
+                    const novoTurno = message.payload.novo_turno;
+                    const estagio = message.payload.estagio;
+                    const btnBuzzer = document.getElementById('btn-buzzer');
+
+                    if (novoTurno === myTeamName) {
+                        // A batata quente caiu na nossa mão!
+                        btnBuzzer.textContent = "SUA VEZ!";
+                        btnBuzzer.style.backgroundColor = "var(--warning)";
+                        document.getElementById('player-actions-area').style.display = 'flex';
+                        document.getElementById('btn-responder').style.display = 'block';
+                        
+                        if (estagio === 'repassa') {
+                            document.getElementById('btn-passa').style.display = 'none';
+                            document.getElementById('btn-repassa').style.display = 'block';
+                        } else if (estagio === 'paga') {
+                            document.getElementById('btn-passa').style.display = 'none';
+                            document.getElementById('btn-repassa').style.display = 'none';
+                            document.getElementById('btn-responder').textContent = "PAGA! (Obrigatório Responder)";
+                            btnBuzzer.style.backgroundColor = "var(--danger)"; // Fica vermelho de desespero
+                        }
+                    } else {
+                        // Passamos a batata quente, ufa!
+                        btnBuzzer.textContent = "VEZ DO OUTRO TIME";
+                        btnBuzzer.style.backgroundColor = "#94a3b8";
+                        document.getElementById('player-actions-area').style.display = 'none';
+                    }
+                }
+                break;
+            case 'ROUND_RESULT':
+                if (myRole === 'player') {
+                    // Esconde as opções (Passa/Repassa)
+                    document.getElementById('player-actions-area').style.display = 'none';
+                    
+                    const btnBuzzer = document.getElementById('btn-buzzer');
+                    btnBuzzer.classList.add('disabled');
+                    
+                    if (message.payload.isCorrect) {
+                        btnBuzzer.textContent = "CORRETO!";
+                        btnBuzzer.style.backgroundColor = "var(--success)";
+                    } else {
+                        btnBuzzer.textContent = "ERROU!";
+                        btnBuzzer.style.backgroundColor = "var(--danger)";
+                    }
+                }
+                break;
+            // ==========================================
+            // QUANDO O JOGADOR CLICA NA ALTERNATIVA (MODO 2)
+            // ==========================================
+            case 'SUBMIT_ANSWER':
+                if (myRole === 'host') {
+                    const respostaRecebida = message.payload.resposta;
+                    const timeRespondeu = message.payload.time;
+                    
+                    const isCorreta = (respostaRecebida === perguntaAtual.resposta_correta);
+                    
+                    // Mostra na tela do Host o que eles escolheram
+                    const questionBox = document.querySelector('.question-box');
+                    questionBox.innerHTML += `<div style="margin-top: 10px; color: var(--primary); font-weight: bold; font-size: 1.2rem; background: #f1f5f9; padding: 10px; border-radius: 8px;">📱 O ${timeRespondeu} escolheu: "${respostaRecebida}"</div>`;
+                    
+                    // Adicionamos um SUSPENSE de 3 segundos antes de dar a resposta final!
+                    // Adicionamos um SUSPENSE de 3 segundos com "Tic-Tac"
+                    let ticks = 0;
+                    const suspenseInterval = setInterval(() => {
+                        SoundManager.ticTac();
+                        ticks++;
+                        if(ticks >= 5) { // Toca 5 vezes (um por meio segundo)
+                            clearInterval(suspenseInterval);
+                        }
+                    }, 500);
+                    setTimeout(() => {
+                        evaluateAnswer(isCorreta);
+                    }, 3000);
+                }
+                break;
+            case 'GAME_OVER':
+                if (myRole === 'player') {
+                    const ranking = message.payload.ranking;
+                    const scores = message.payload.scores;
+
+                    // Substitui o botão gigante pelo resultado!
+                    document.getElementById('screen-game-player').innerHTML = `
+                        <h1 style="margin-top: 50px; font-size: 2.5rem;">🏆 Fim de Jogo!</h1>
+                        <div class="card" style="margin-top: 30px;">
+                            <h2 style="color: var(--warning); font-size: 2rem;">🥇 Vencedor:<br>${ranking[0]}</h2>
+                            <p style="font-size: 1.5rem; font-weight: bold; color: var(--text-muted);">${scores[ranking[0]]} Pontos</p>
+                        </div>
+                    `;
+                }
+                break;
+            default:
+                console.warn("Mensagem não reconhecida:", message.type);
+        }
+    }
+
+    // --- FUNÇÕES DE ENVIO ---
+    function sendToHost(data) {
+        if (hostConnection && hostConnection.open) {
+            hostConnection.send(data);
+        }
+    }
+
+    function broadcastToPlayers(data) {
+        Object.values(hostConnections).forEach(conn => {
+            if (conn.open) {
+                conn.send(data);
+            }
+        });
+    }
+
+    // --- FUNÇÕES DE CONTROLE (NO HOST) ---
+    function hostUnlockBuzzer() {
+        if (myRole === 'host') {
+            isBuzzerLocked = false;
+            console.log("Liberando Buzzer para os times!");
+            broadcastToPlayers({ type: 'UNLOCK_BUZZER' });
+        }
+    }
+
+    // --- FUNÇÕES DE CONTROLE (NO JOGADOR) ---
+    function playerHitBuzzer() {
+        if (myRole === 'player') {
+            const btnBuzzer = document.getElementById('btn-buzzer');
+            
+            // Verifica se o botão não está desabilitado antes de enviar
+            if (!btnBuzzer.classList.contains('disabled')) {
+                // Ao clicar, bloqueia localmente para evitar spam no botão
+                btnBuzzer.classList.add('disabled');
+                btnBuzzer.textContent = "Aguardando...";
+                
+                sendToHost({
+                    type: 'BUZZER_HIT',
+                    payload: { time: myTeamName, timestamp: Date.now() }
+                });
+            }
+        }
+    }
+
+    // --- GERENCIAMENTO DAS PERGUNTAS ---
+    async function carregarBancoDePerguntas() {
+        try {
+            const response = await fetch('perguntas.json');
+            bancoDePerguntas = await response.json();
+            
+            // Embaralha o array para as perguntas virem em ordem aleatória
+            bancoDePerguntas.sort(() => Math.random() - 0.5);
+            console.log(`Sucesso: ${bancoDePerguntas.length} perguntas carregadas!`);
+        } catch (error) {
+            console.error("Erro ao carregar perguntas:", error);
+            alert("Não foi possível carregar as perguntas. Está rodando em um servidor local?");
+        }
+    }
+
+    function exibirProximaPergunta() {
+        if (myRole === 'host') {
+            if (bancoDePerguntas.length === 0) {
+                alert("O jogo acabou! Não há mais perguntas.");
+                return;
+            }
+
+            // Pega a última pergunta do array embaralhado
+            perguntaAtual = bancoDePerguntas.pop();
+
+            // Escreve os dados na tela do Host (na div question-box)
+            const questionBox = document.querySelector('.question-box');
+            questionBox.innerHTML = `
+                <span style="font-size: 0.9rem; color: var(--text-muted); display: block; margin-bottom: 10px;">
+                    Categoria: ${perguntaAtual.categoria} | Dificuldade: ${perguntaAtual.dificuldade.toUpperCase()}
+                </span>
+                ${perguntaAtual.pergunta}
+                
+                <div style="margin-top: 15px; font-size: 1.1rem; color: var(--success); font-weight: bold; padding: 10px; background: #dcfce7; border-radius: 8px;">
+                    Resposta Correta: ${perguntaAtual.resposta_correta}
+                </div>
+            `;
+
+            // Garante que o Buzzer comece bloqueado até o apresentador liberar!
+            isBuzzerLocked = true;
+
+            // Descobre qual modo o Host escolheu no seletor
+            const modoEscolhido = parseInt(document.getElementById('config-modo').value);
+
+            // Avisa os celulares que uma nova pergunta foi sorteada (prepara a tela deles)
+            broadcastToPlayers({
+                type: 'NOVA_PERGUNTA',
+                payload: { pergunta: perguntaAtual, modo: modoEscolhido }
+            });
+        }
+    }
+
+    // --- FUNÇÃO DE AÇÃO DO JOGADOR (Passa/Repassa/Responder) ---
+    function sendAction(acao) {
+        if (myRole === 'player') {
+            // Esconde os botões imediatamente para evitar clique duplo
+            document.getElementById('player-actions-area').style.display = 'none';
+            const btnBuzzer = document.getElementById('btn-buzzer');
+            btnBuzzer.textContent = "AGUARDANDO...";
+            btnBuzzer.style.backgroundColor = "#94a3b8";
+
+            sendToHost({
+                type: 'PLAYER_ACTION',
+                payload: { acao: acao, time: myTeamName }
+            });
+        }
+    }
+
+    // --- FUNÇÃO DE AVALIAÇÃO DO APRESENTADOR ---
+    function evaluateAnswer(isCorrect) {
+        if (myRole === 'host') {
+            if (!currentAnsweringTeam) {
+                alert("Aguarde um time bater no botão ou assumir a resposta!");
+                return;
+            }
+
+            const questionBox = document.querySelector('.question-box');
+
+            // Garante que o time já existe no placar (se não existir, inicia com 0)
+            if (teamScores[currentAnsweringTeam] === undefined) teamScores[currentAnsweringTeam] = 0;
+
+            if (isCorrect) {
+            // TOCA O SOM DE ACERTO!
+                SoundManager.acerto();
+                teamScores[currentAnsweringTeam] += 10;
+                questionBox.innerHTML += `<div style="margin-top: 15px; color: var(--success); font-weight: bold; font-size: 1.5rem; animation: fadeIn 0.3s;">🎉 ${currentAnsweringTeam} ACERTOU! (+10 pts)</div>`;
+            } else {
+            // TOCA O SOM DE ERRO!
+                SoundManager.erro();
+                teamScores[currentAnsweringTeam] -= 5;
+                questionBox.innerHTML += `<div style="margin-top: 15px; color: var(--danger); font-weight: bold; font-size: 1.5rem; animation: fadeIn 0.3s;">💀 ${currentAnsweringTeam} ERROU! (-5 pts)</div>`;
+            }
+
+            // Atualiza os números no Placar da Tela do Host
+            const timesConectados = Object.keys(teamScores);
+            if(timesConectados[0]) document.getElementById('host-team1-score').textContent = teamScores[timesConectados[0]];
+            if(timesConectados[1]) document.getElementById('host-team2-score').textContent = teamScores[timesConectados[1]];
+
+            // Avisa os jogadores do resultado
+            broadcastToPlayers({
+                type: 'ROUND_RESULT',
+                payload: { isCorrect: isCorrect }
+            });
+
+            // Reseta a vez para o apresentador não clicar duas vezes sem querer
+            currentAnsweringTeam = null; 
+            // Dá um respiro de 2 segundos para o pessoal ver quem acertou/errou, e depois checa se o jogo acabou
+            setTimeout(() => {
+                checkWinCondition();
+            }, 2000);
+        }
+    }
+
+    // --- FUNÇÃO DE ENVIAR A RESPOSTA (MODO 2) ---
+    function sendAnswer(indice) {
+        if (myRole === 'player') {
+            document.getElementById('player-actions-area').style.display = 'none';
+            const btnBuzzer = document.getElementById('btn-buzzer');
+            btnBuzzer.textContent = "ENVIADO...";
+            btnBuzzer.style.backgroundColor = "#f59e0b"; // Fica laranja de suspense
+
+            sendToHost({
+                type: 'SUBMIT_ANSWER',
+                payload: { resposta: currentOptions[indice], time: myTeamName }
+            });
+        }
+    }
+
+    // --- VERIFICAÇÃO DE FIM DE JOGO ---
+    function checkWinCondition() {
+        if (myRole === 'host') {
+            const times = Object.keys(teamScores);
+            let temosUmVencedor = false;
+
+            // Verifica se alguém atingiu a meta
+            for (let time of times) {
+                if (teamScores[time] >= metaDePontos) {
+                    temosUmVencedor = true;
+                }
+            }
+
+            // Se alguém ganhou OU acabaram as perguntas, encerra o jogo!
+            if (temosUmVencedor || bancoDePerguntas.length === 0) {
+                // Ordena do maior para o menor placar
+                const ranking = times.sort((a, b) => teamScores[b] - teamScores[a]);
+                
+                // Monta o Pódio na tela do Host
+                document.getElementById('podium-results').innerHTML = `
+                    <div style="color: var(--warning); font-weight: 900; font-size: 2rem; animation: fadeIn 0.5s;">🥇 1º ${ranking[0]} <br><span style="font-size: 1.2rem;">(${teamScores[ranking[0]]} pts)</span></div>
+                    <div style="color: var(--text-muted); font-weight: bold; margin-top: 10px;">🥈 2º ${ranking[1]} <br><span style="font-size: 1rem;">(${teamScores[ranking[1]]} pts)</span></div>
+                `;
+                
+                showScreen('screen-results');
+                SoundManager.acerto(); // Toca um som feliz final!
+
+                // Avisa os celulares que o jogo acabou
+                broadcastToPlayers({
+                    type: 'GAME_OVER',
+                    payload: { ranking: ranking, scores: teamScores }
+                });
+            } else {
+                // Se ninguém ganhou ainda, puxa a próxima pergunta!
+                exibirProximaPergunta();
+            }
+        }
+    }
+
+    return { initHost, initPlayer, sendToHost, broadcastToPlayers, hostUnlockBuzzer, playerHitBuzzer, startGame, carregarBancoDePerguntas, exibirProximaPergunta, sendAction, evaluateAnswer, sendAnswer };
+})();
+
+document.addEventListener('DOMContentLoaded', () => {
+    GameNetwork.carregarBancoDePerguntas();
+
+    // Tenta recuperar os dados se o jogador tiver recarregado a página sem querer
+    const cachedRoom = sessionStorage.getItem('quizRoomCache');
+    const cachedTeam = sessionStorage.getItem('quizTeamCache');
+
+    if (cachedRoom && cachedTeam) {
+        document.getElementById('input-room-code').value = cachedRoom;
+        document.getElementById('input-team-name').value = cachedTeam;
+        
+        // Pula direto para a tela de digitar o código para agilizar!
+        showScreen('screen-lobby-player');
+    }
+});
+
+// Navegação da Interface (A que você já tem)
+function showScreen(screenId) {
+    document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+    document.getElementById(screenId).classList.add('active');
+}
+
+function conectarJogador() {
+    const codigo = document.getElementById('input-room-code').value;
+    const time = document.getElementById('input-team-name').value;
+
+    if(!codigo || !time) {
+        alert("Preencha o código da sala e o nome do time!");
+        return;
+    }
+
+    // Muda o texto do botão para dar feedback visual
+    event.target.textContent = "Conectando..."; 
+    GameNetwork.initPlayer(codigo, time);
+}
+</script>
+
+</body>
+</html>

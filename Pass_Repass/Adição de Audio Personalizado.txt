@@ -1,0 +1,47 @@
+Passo 1: Separe os seus arquivos de áudio
+Você vai precisar de 4 arquivos de áudio curtos. Coloque-os na mesma pasta onde está o seu arquivo index_passa_repassa.html (ou crie uma pastinha chamada audios ao lado dele).
+
+Para o código abaixo funcionar de primeira, renomeie seus arquivos assim:
+
+buzzer.mp3 (O som de sirene ou batida quando alguém aperta o botão)
+
+acerto.mp3 (O som de moedas, plim-plim ou aplausos)
+
+erro.mp3 (O famoso fom-fom ou campainha de erro)
+
+tictac.mp3 (Um som de relógio bem curto, um "tic", que vai se repetir no suspense)
+
+Passo 2: Substitua o SoundManager
+No seu código HTML, vá até o bloco onde criamos o const SoundManager = (() => { ... })(); na etapa anterior, apague ele inteiro e cole este novo no lugar:
+
+/**
+ * GERENCIADOR DE ÁUDIO (Arquivos MP3 Reais)
+ */
+const SoundManager = (() => {
+    // 1. Pré-carrega os arquivos na memória do navegador para não ter atraso
+    // (Se você colocou numa pasta 'audios', mude para 'audios/buzzer.mp3', etc.)
+    const audioBuzzer = new Audio('buzzer.mp3');
+    const audioAcerto = new Audio('acerto.mp3');
+    const audioErro = new Audio('erro.mp3');
+    const audioTicTac = new Audio('tictac.mp3');
+
+    // 2. Função inteligente para tocar o áudio
+    function playSound(audioElement) {
+        // Isso faz o áudio voltar pro segundo 0. 
+        // Assim, se você clicar em "Acertou" duas vezes rápido, ele toca duas vezes na hora, sem esperar o som anterior terminar.
+        audioElement.currentTime = 0; 
+        
+        // Tenta tocar o som e avisa no console se o navegador bloquear
+        audioElement.play().catch(erro => {
+            console.warn("Áudio bloqueado pelo navegador. O Host precisa clicar em algum lugar da tela antes de tocar som.", erro);
+        });
+    }
+
+    return {
+        // Chamamos a mesma função playSound passando o arquivo correspondente
+        buzzer: () => playSound(audioBuzzer),
+        acerto: () => playSound(audioAcerto),
+        erro:   () => playSound(audioErro),
+        ticTac: () => playSound(audioTicTac)
+    };
+})();
