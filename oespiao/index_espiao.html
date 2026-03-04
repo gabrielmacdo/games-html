@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>O Espião</title>
+    <style>
+        /* --- CSS VARIABLES & RESET --- */
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4338ca;
+            --secondary: #ec4899;
+            --success: #22c55e;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --background: #f8fafc;
+            --surface: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1);
+            --radius: 16px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Roboto, sans-serif; }
+
+        body { background-color: var(--background); color: var(--text-main); height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+        .app-container { width: 100%; max-width: 600px; margin: 0 auto; height: 100%; display: flex; flex-direction: column; position: relative; }
+        
+        .screen { flex: 1; display: none; flex-direction: column; padding: 24px; animation: fadeIn 0.3s ease-in-out; overflow-y: auto; }
+        .screen.active { display: flex; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- COMPONENTES BÁSICOS --- */
+        h1 { font-size: 1.8rem; color: var(--primary); text-align: center; margin-bottom: 20px; font-weight: 800; }
+        .card { background: var(--surface); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow-md); margin-bottom: 20px; text-align: center; }
+        
+        .input-group { margin-bottom: 20px; text-align: left; }
+        .label { font-size: 0.9rem; color: var(--text-muted); font-weight: 600; margin-bottom: 8px; display: block; }
+        input[type="text"] { width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 12px; font-size: 1.2rem; outline: none; text-align: center; }
+        input:focus { border-color: var(--primary); }
+
+        .btn { width: 100%; padding: 16px; border: none; border-radius: 12px; font-size: 1.1rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 10px;}
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-success { background: var(--success); color: white; }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-warning { background: var(--warning); color: white; }
+        .btn-outline { background: transparent; border: 2px solid var(--text-muted); color: var(--text-muted); }
+
+        /* --- ESTILOS ESPECÍFICOS DO ESPIÃO --- */
+        .timer-display { font-size: 4rem; font-weight: 900; color: var(--text-main); text-align: center; font-variant-numeric: tabular-nums; margin: 20px 0; }
+        .role-reveal { font-size: 2rem; font-weight: 900; padding: 30px 10px; border-radius: var(--radius); color: white; margin-bottom: 20px;}
+        .role-agent { background: var(--primary); }
+        .role-spy { background: var(--danger); }
+        
+        .grid-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    </style>
+    <script src="peerjs.min.js"></script>
+</head>
+<body>
+
+<div class="app-container">
+
+    <section id="screen-home" class="screen active" style="position: relative;">
+        <button class="btn btn-outline" style="position: absolute; top: 20px; right: 20px; width: 50px; height: 50px; border-radius: 50%; padding: 0; font-size: 1.5rem; display: flex; align-items: center; justify-content: center; border: 2px solid var(--text-muted);" onclick="showScreen('screen-instructions')">
+            ❓
+        </button>
+        <h1>🕵️ O Espião</h1>
+        <div class="card" style="margin-top: auto; margin-bottom: auto;">
+            <p style="color: var(--text-muted); margin-bottom: 30px;">Descubra o espião ou engane a todos.</p>
+            <button class="btn btn-primary" onclick="GameNetwork.initHost()">📺 Sou o Host (Criar Sala)</button>
+            <button class="btn btn-outline" onclick="showScreen('screen-lobby-player')">📱 Sou Jogador (Entrar)</button>
+        </div>
+    </section>
+
+    <section id="screen-instructions" class="screen">
+        <h1>📖 Como Jogar</h1>
+        
+        <div class="card" style="text-align: left; overflow-y: auto; max-height: 70vh;">
+            <p style="margin-bottom: 15px; color: var(--text-muted);">
+                <strong>O Espião</strong> é um jogo de dedução, blefe e conversas desconfiadas.
+            </p>
+
+            <h3 style="color: var(--primary); margin-top: 20px; margin-bottom: 10px;">🎯 O Objetivo</h3>
+            <ul style="font-size: 0.9rem; margin-left: 20px; margin-bottom: 15px; color: var(--text-muted);">
+                <li><strong>Os Agentes (A Maioria):</strong> Recebem um "Local Secreto". Devem fazer perguntas entre si para descobrir quem é o espião do grupo.</li>
+                <li><strong>O Espião (1 Jogador):</strong> Não sabe onde está. Deve prestar atenção nas perguntas e respostas dos outros para tentar adivinhar o local sem ser notado!</li>
+            </ul>
+
+            <h3 style="color: var(--primary); margin-bottom: 10px;">🗣️ Como Funciona</h3>
+            <ul style="font-size: 0.9rem; margin-left: 20px; margin-bottom: 15px; color: var(--text-muted);">
+                <li>O Host distribui os papéis, todos leem em segredo e a discussão começa.</li>
+                <li>O Jogador A escolhe alguém e faz uma pergunta sobre o local. <br><em>(Ex: "Você costuma vir aqui de uniforme?")</em></li>
+                <li>O Jogador B responde e faz uma pergunta para uma terceira pessoa.</li>
+            </ul>
+            <div style="background: #f1f5f9; padding: 10px; border-radius: 8px; font-size: 0.85rem; border-left: 4px solid var(--warning); margin-bottom: 15px;">
+                <strong>Cuidado:</strong> Perguntas muito óbvias entregam o local para o espião. Perguntas muito vagas fazem os outros acharem que VOCÊ é o traidor!
+            </div>
+
+            <h3 style="color: var(--danger); margin-bottom: 10px;">🛑 Fim da Rodada</h3>
+            <p style="font-size: 0.9rem; margin-bottom: 10px; color: var(--text-muted);">O jogo pode ser interrompido pelo Host de duas formas:</p>
+            <ul style="font-size: 0.9rem; margin-left: 20px; margin-bottom: 15px; color: var(--text-muted);">
+                <li><strong>🚨 Acusação (Votação):</strong> Se o tempo acabar ou o grupo suspeitar de alguém, o Host libera a votação. Todos votam no celular em quem acham ser o Espião.</li>
+                <li><strong>👁️ Revelação (Palpite):</strong> Se o Espião achar que descobriu o local, ele grita "Pausa!", revela sua identidade e usa seu celular para dar o palpite final.</li>
+            </ul>
+        </div>
+
+        <button class="btn btn-primary" style="margin-top: auto;" onclick="showScreen('screen-home')">
+            ⬅️ Voltar para o Início
+        </button>
+    </section>
+
+    <section id="screen-lobby-player" class="screen">
+        <h1>Entrar na Sala</h1>
+        <div class="card">
+            <div class="input-group">
+                <label class="label">Código da Sala</label>
+                <input type="text" id="input-room-code" placeholder="ABCD" style="text-transform: uppercase;">
+            </div>
+            <div class="input-group">
+                <label class="label">Seu Nome</label>
+                <input type="text" id="input-player-name" placeholder="Ex: João">
+            </div>
+            <button class="btn btn-success" onclick="conectarJogador()">CONECTAR</button>
+        </div>
+        <button class="btn btn-outline" onclick="showScreen('screen-home')">Voltar</button>
+    </section>
+
+    <section id="screen-lobby-host" class="screen">
+        <h1>Sala Criada!</h1>
+        <div class="card">
+            <p class="label">Código da Sala:</p>
+            <h2 style="font-size: 3rem; color: var(--primary); letter-spacing: 5px;" id="host-room-code-display">X7K9</h2>
+        </div>
+        <div class="card" style="flex: 1;">
+            <h3>Jogadores (Mín. 2):</h3>
+            <ul id="host-players-list" style="list-style: none; margin-top: 15px; color: var(--text-muted);">
+                <li>Aguardando jogadores...</li>
+            </ul>
+        </div>
+        <button id="btn-start-game" class="btn btn-primary" onclick="GameNetwork.startGame()">DISTRIBUIR PAPÉIS</button>
+    </section>
+
+    <section id="screen-host-dashboard" class="screen">
+        <h1>Painel de Controle</h1>
+        
+        <div class="card">
+            <p class="label">Tempo Restante</p>
+            <div class="timer-display" id="host-timer">08:00</div>
+        </div>
+
+        <div style="margin-top: auto;">
+            <button id="btn-start-discussion" class="btn btn-success" style="margin-bottom: 20px;" onclick="GameNetwork.startDiscussion()">
+                🗣️ Iniciar Discussão (Ocultar Telas)
+            </button>
+
+            <p class="label" style="text-align: center;">Interromper Partida:</p>
+            <div class="grid-buttons">
+                <button class="btn btn-warning" style="height: 100px;" onclick="GameNetwork.startVoting()">🚨<br>Acusação<br>(Votação)</button>
+                <button class="btn btn-danger" style="height: 100px;" onclick="GameNetwork.startReveal()">👁️<br>Revelação<br>(Palpite do Espião)</button>
+            </div>
+        </div>
+    </section>
+
+    <section id="screen-player-role" class="screen">
+        <h2 style="color: var(--text-muted); margin-bottom: 20px;">Seu papel nesta rodada:</h2>
+        
+        <div id="player-role-card" class="card role-reveal role-agent">
+            <span style="font-size: 1.2rem; display: block; margin-bottom: 10px;">Vocês estão no(a):</span>
+            HOSPITAL
+        </div>
+
+        <p style="text-align: center; color: var(--danger); font-weight: bold; margin-top: auto; margin-bottom: 20px;">
+            Não deixe ninguém ver sua tela!
+        </p>
+    </section>
+
+    <section id="screen-player-discussion" class="screen">
+        <div class="card" style="margin-top: auto; margin-bottom: auto; border: 2px dashed var(--primary);">
+            <h2 style="color: var(--primary);" id="discussion-title">⏳ Aguardando...</h2>
+            <p style="color: var(--text-muted); margin-top: 15px;" id="discussion-text">
+                Aguarde o Host iniciar a partida.
+            </p>
+        </div>
+    </section>
+
+    <section id="screen-player-vote" class="screen">
+        <h2>🚨 Votação Secreta</h2>
+        <p style="text-align: center; color: var(--text-muted); margin-bottom: 20px;">
+            Quem você acha que é o Espião?
+        </p>
+        
+        <div id="vote-buttons-area" style="display: flex; flex-direction: column; gap: 10px; overflow-y: auto; max-height: 60vh;">
+            </div>
+    </section>
+
+</div>
+
+<script>
+/**
+ * GERENCIADOR DE REDE E CONEXÃO (PeerJS) - O ESPIÃO
+ */
+const GameNetwork = (() => {
+    let peer = null;
+    let myRole = null;
+    
+    // Variáveis do Host
+    let hostConnections = {};
+    let roomCode = "";
+    let bancoDeLocais = [];
+    let localAtual = null;
+    let espiaoId = null;
+    
+    let timerInterval = null; // Guarda o motor do relógio
+    let timeLeft = 8 * 60; // 8 minutos em segundos (480)
+    let votosRecebidos = {}; // Vai guardar quem votou em quem
+
+    // Variáveis do Jogador
+    let hostConnection = null; 
+    let myPlayerName = ""; 
+
+    // ==========================================
+    // PROTEÇÃO 1: ALERTA DE SAÍDA ACIDENTAL
+    // ==========================================
+    window.addEventListener('beforeunload', function (e) {
+        // Se a pessoa já escolheu ser host ou jogador, trava a tela!
+        if (myRole !== null) {
+            e.preventDefault();
+            e.returnValue = ''; // Obriga o navegador a mostrar a janela de aviso
+        }
+    });
+
+    function initHost() {
+        myRole = 'host';
+        roomCode = Math.random().toString(36).substring(2, 6).toUpperCase();
+        const customPeerId = 'ESPIAO-' + roomCode;
+
+        peer = new Peer(customPeerId);
+
+        peer.on('open', (id) => {
+            document.getElementById('host-room-code-display').textContent = roomCode;
+            showScreen('screen-lobby-host');
+            carregarLocais(); 
+        });
+
+        peer.on('connection', (conn) => {
+            conn.on('open', () => {
+                hostConnections[conn.peer] = { conn: conn, name: "Desconhecido" };
+            });
+
+            conn.on('data', (data) => {
+                handleIncomingData(data, conn);
+            });
+
+            conn.on('close', () => {
+                delete hostConnections[conn.peer];
+                atualizarListaJogadoresLobby();
+            });
+        });
+        
+        peer.on('error', (err) => {
+            console.error('Erro no Host:', err);
+        });
+    }
+
+    function initPlayer(inputRoomCode, playerName) {
+        myPlayerName = playerName;
+        myRole = 'player';
+
+        // PROTEÇÃO 2: Salva os dados na memória curta do navegador
+        sessionStorage.setItem('espiaoRoomCache', inputRoomCode);
+        sessionStorage.setItem('espiaoPlayerCache', playerName);
+
+        peer = new Peer(); 
+
+        peer.on('open', (id) => {
+            const targetHostId = 'ESPIAO-' + inputRoomCode.toUpperCase();
+            hostConnection = peer.connect(targetHostId, { reliable: true });
+
+            hostConnection.on('open', () => {
+                sendToHost({ type: 'JOIN_ROOM', payload: { nome_jogador: playerName } });
+                
+                showScreen('screen-player-discussion');
+                document.getElementById('discussion-title').textContent = "✅ Conectado!";
+                document.getElementById('discussion-text').textContent = "Aguarde o Host distribuir os papéis...";
+            });
+
+            hostConnection.on('data', (data) => {
+                handleIncomingData(data);
+            });
+        });
+
+        peer.on('error', (err) => {
+            if (err.type === 'peer-unavailable') {
+                alert("Sala não encontrada! Verifique o código.");
+            }
+        });
+    }
+
+    async function carregarLocais() {
+        try {
+            const response = await fetch('locais.json');
+            bancoDeLocais = await response.json();
+        } catch (error) {
+            console.error("Erro ao carregar locais:", error);
+            alert("Não foi possível carregar os locais. Está rodando num servidor local?");
+        }
+    }
+
+    function startGame() {
+        if (myRole !== 'host') return;
+
+        const idsJogadores = Object.keys(hostConnections);
+        if (idsJogadores.length < 2) {
+            alert("Aguarde pelo menos 2 jogadores para testar!");
+            return;
+        }
+
+        if (bancoDeLocais.length === 0) {
+            alert("Os locais ainda não carregaram. Aguarde um segundo.");
+            return;
+        }
+
+        // Sorteia o Local
+        const indiceLocal = Math.floor(Math.random() * bancoDeLocais.length);
+        localAtual = bancoDeLocais[indiceLocal].nome;
+
+        // Sorteia quem vai ser o Espião
+        const indiceEspiao = Math.floor(Math.random() * idsJogadores.length);
+        espiaoId = idsJogadores[indiceEspiao];
+
+        console.log(`O local é ${localAtual} e o espião é ${hostConnections[espiaoId].name}`);
+
+        // Distribui os papéis
+        idsJogadores.forEach(id => {
+            const jogador = hostConnections[id];
+            const isSpy = (id === espiaoId);
+            
+            jogador.conn.send({
+                type: 'ROLE_REVEAL',
+                payload: {
+                    isSpy: isSpy,
+                    local: isSpy ? null : localAtual
+                }
+            });
+        });
+
+        showScreen('screen-host-dashboard');
+    }
+
+    function startDiscussion() {
+        if (myRole !== 'host') return;
+
+        // 1. Avisa os celulares para esconderem as telas
+        const idsJogadores = Object.keys(hostConnections);
+        idsJogadores.forEach(id => {
+            hostConnections[id].conn.send({ type: 'START_DISCUSSION' });
+        });
+
+        // 2. Trava o botão para o Host não clicar duas vezes sem querer
+        const btn = document.getElementById('btn-start-discussion');
+        btn.classList.add('disabled');
+        btn.onclick = null; // Remove o clique temporariamente
+
+        // 3. Inicia o Cronômetro na tela do Host
+        timeLeft = 8 * 60; // Reinicia para 8 minutos
+        if (timerInterval) clearInterval(timerInterval);
+        
+        timerInterval = setInterval(() => {
+            timeLeft--;
+            
+            // Formata para ficar bonito (ex: 07:59)
+            const minutos = Math.floor(timeLeft / 60).toString().padStart(2, '0');
+            const segundos = (timeLeft % 60).toString().padStart(2, '0');
+            
+            const timerDisplay = document.getElementById('host-timer');
+            timerDisplay.textContent = `${minutos}:${segundos}`;
+
+            // Efeito visual quando o tempo está acabando (último minuto)
+            if (timeLeft <= 60) {
+                timerDisplay.style.color = "var(--danger)";
+            }
+
+            // Quando o tempo zera!
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                timerDisplay.textContent = "00:00";
+                alert("O tempo acabou! Hora da Votação!");
+                // No futuro, podemos fazer isso acionar a votação direto
+            }
+        }, 1000);
+    }
+
+    function handleIncomingData(message, conn = null) {
+        switch (message.type) {
+            case 'JOIN_ROOM':
+                if (myRole === 'host') {
+                    const nome = message.payload.nome_jogador;
+                    hostConnections[conn.peer].name = nome;
+                    atualizarListaJogadoresLobby();
+                }
+                break;
+
+            case 'ROLE_REVEAL':
+                if (myRole === 'player') {
+                    const isSpy = message.payload.isSpy;
+                    const local = message.payload.local;
+                    const cardRole = document.getElementById('player-role-card');
+                    
+                    if (isSpy) {
+                        cardRole.className = 'card role-reveal role-spy';
+                        cardRole.innerHTML = `
+                            <span style="font-size: 1.2rem; display: block; margin-bottom: 10px;">Você é o:</span>
+                            🕵️ ESPIÃO!
+                            <span style="font-size: 0.9rem; display: block; margin-top: 15px; font-weight: normal;">Tente descobrir onde vocês estão sem ser notado.</span>
+                        `;
+                    } else {
+                        cardRole.className = 'card role-reveal role-agent';
+                        cardRole.innerHTML = `
+                            <span style="font-size: 1.2rem; display: block; margin-bottom: 10px;">Vocês estão no(a):</span>
+                            📍 ${local.toUpperCase()}
+                            <span style="font-size: 0.9rem; display: block; margin-top: 15px; font-weight: normal;">Faça perguntas para descobrir quem é o espião.</span>
+                        `;
+                    }
+
+                    showScreen('screen-player-role');
+                    if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+                }
+                break;
+            case 'START_DISCUSSION':
+                if (myRole === 'player') {
+                    // Muda os textos para a fase de discussão
+                    document.getElementById('discussion-title').textContent = "🗣️ Fase de Discussão";
+                    document.getElementById('discussion-text').innerHTML = "Façam perguntas uns aos outros sobre o local!<br><br><strong>Mantenha seu celular bloqueado ou virado para baixo.</strong>";
+                    
+                    // Joga o celular para a tela neutra, escondendo o papel
+                    showScreen('screen-player-discussion');
+                    
+                    // Vibra para avisar que começou
+                    if (navigator.vibrate) navigator.vibrate(500);
+                }
+                break;
+            // --- HORA DA VOTAÇÃO (CELULAR RECEBE) ---
+            case 'START_VOTE':
+                if (myRole === 'player') {
+                    const lista = message.payload.lista;
+                    const area = document.getElementById('vote-buttons-area');
+                    area.innerHTML = ''; // Limpa os botões antigos
+
+                    // Cria um botão para cada jogador da sala
+                    lista.forEach(jogador => {
+                        area.innerHTML += `<button class="btn btn-outline" style="padding: 20px; font-size: 1.2rem;" onclick="GameNetwork.castVote('${jogador.id}')">${jogador.nome}</button>`;
+                    });
+
+                    showScreen('screen-player-vote');
+                    if (navigator.vibrate) navigator.vibrate(300);
+                }
+                break;
+
+            // --- VOTO COMPUTADO (HOST RECEBE) ---
+            case 'SUBMIT_VOTE':
+                if (myRole === 'host') {
+                    const suspeitoId = message.payload.suspeitoId;
+                    const quemVotouId = conn.peer;
+                    
+                    votosRecebidos[quemVotouId] = suspeitoId;
+                    console.log(`${hostConnections[quemVotouId].name} votou.`);
+
+                    const totalVotos = Object.keys(votosRecebidos).length;
+                    const totalJogadores = Object.keys(hostConnections).length;
+
+                    // Se todos já votaram, o Host apura o resultado automaticamente!
+                    if (totalVotos === totalJogadores) {
+                        setTimeout(() => apurarVotos(), 1000); // Dá um segundo de suspense
+                    }
+                }
+                break;
+
+            // --- FIM DE JOGO (CELULAR RECEBE) ---
+            case 'GAME_OVER':
+                if (myRole === 'player') {
+                    const ganhamos = message.payload.ganhou;
+                    const nomeEspiao = message.payload.espiao;
+                    const area = document.getElementById('vote-buttons-area');
+                    
+                    if (ganhamos) {
+                        area.innerHTML = `
+                            <h2 style="color: var(--success); text-align: center;">🏆 Vocês Venceram!</h2>
+                            <p style="text-align: center; color: var(--text-muted); font-size: 1.2rem; margin-top: 10px;">O espião ${nomeEspiao} foi desmascarado!</p>
+                        `;
+                    } else {
+                        area.innerHTML = `
+                            <h2 style="color: var(--danger); text-align: center;">💀 Vocês Perderam!</h2>
+                            <p style="text-align: center; color: var(--text-muted); font-size: 1.2rem; margin-top: 10px;">O espião era o(a) ${nomeEspiao}!</p>
+                        `;
+                    }
+                }
+                break;
+            // --- HORA DA REVELAÇÃO (CELULAR RECEBE) ---
+            case 'START_REVEAL':
+                if (myRole === 'player') {
+                    const isSpy = message.payload.isSpy;
+                    const locais = message.payload.locais;
+                    const area = document.getElementById('vote-buttons-area');
+                    area.innerHTML = '';
+
+                    if (isSpy) {
+                        // A tela do Espião vira uma lista de locais
+                        document.querySelector('#screen-player-vote h2').textContent = "👁️ Dê o seu palpite!";
+                        document.querySelector('#screen-player-vote p').textContent = "Onde você acha que estão?";
+                        
+                        // Organiza os locais em ordem alfabética para ficar mais fácil dele achar
+                        locais.sort().forEach(local => {
+                            area.innerHTML += `<button class="btn btn-outline" style="padding: 15px; font-size: 1.1rem; margin-bottom: 5px;" onclick="GameNetwork.submitGuess('${local}')">${local}</button>`;
+                        });
+                    } else {
+                        // A tela dos Agentes vira uma sala de espera
+                        document.querySelector('#screen-player-vote h2').textContent = "👁️ O Espião se revelou!";
+                        document.querySelector('#screen-player-vote p').textContent = "Ele está tentando adivinhar o local...";
+                        area.innerHTML = `<h3 style="color: var(--danger); text-align: center; margin-top: 20px;">Aguardando palpite...</h3>`;
+                    }
+                    
+                    showScreen('screen-player-vote');
+                    if (navigator.vibrate) navigator.vibrate([100, 100, 100]);
+                }
+                break;
+
+            // --- PALPITE ENVIADO (HOST RECEBE) ---
+            case 'SUBMIT_GUESS':
+                if (myRole === 'host') {
+                    const palpite = message.payload.palpite;
+                    const nomeEspiaoVerdadeiro = hostConnections[espiaoId].name;
+                    const acertou = (palpite === localAtual); // Validação instantânea!
+                    
+                    const dashboard = document.getElementById('screen-host-dashboard');
+
+                    if (acertou) {
+                        dashboard.innerHTML = `
+                            <h1 style="color: var(--danger); font-size: 2.5rem; margin-top: 20px;">🚨 O Espião Venceu!</h1>
+                            <div class="card">
+                                <h2 style="color: var(--text-main);">Ele descobriu o local!</h2>
+                                <p style="font-size: 1.5rem; margin-top: 15px;"><strong>${nomeEspiaoVerdadeiro}</strong> adivinhou brilhantemente que vocês estavam no(a) <strong>${localAtual}</strong>.</p>
+                            </div>
+                            <button class="btn btn-primary" onclick="location.reload()">Jogar Novamente</button>
+                        `;
+                    } else {
+                        dashboard.innerHTML = `
+                            <h1 style="color: var(--success); font-size: 2.5rem; margin-top: 20px;">🕵️ Agentes Venceram!</h1>
+                            <div class="card">
+                                <h2 style="color: var(--text-main);">O Espião errou o palpite!</h2>
+                                <p style="font-size: 1.2rem; margin-top: 15px;">${nomeEspiaoVerdadeiro} achou que fosse: <em>${palpite}</em>.</p>
+                                <p style="font-size: 1.5rem; margin-top: 15px; color: var(--success); font-weight: bold;">O local correto era ${localAtual}!</p>
+                            </div>
+                            <button class="btn btn-primary" onclick="location.reload()">Jogar Novamente</button>
+                        `;
+                    }
+
+                    // Reutilizamos o GAME_OVER para avisar os celulares se eles ganharam ou perderam
+                    Object.keys(hostConnections).forEach(id => {
+                        hostConnections[id].conn.send({ 
+                            type: 'GAME_OVER', 
+                            // Se o espião acertou, os agentes perderam (logo, ganhou = false para os agentes)
+                            payload: { ganhou: !acertou, espiao: nomeEspiaoVerdadeiro } 
+                        });
+                    });
+                }
+                break;
+        }
+    }
+
+    function sendToHost(data) {
+        if (hostConnection && hostConnection.open) hostConnection.send(data);
+    }
+
+    function atualizarListaJogadoresLobby() {
+        const ul = document.getElementById('host-players-list');
+        const nomes = Object.values(hostConnections).map(j => j.name);
+        
+        ul.innerHTML = '';
+        if (nomes.length === 0) {
+            ul.innerHTML = '<li>Aguardando jogadores...</li>';
+            return;
+        }
+
+        nomes.forEach(nome => {
+            ul.innerHTML += `<li style="padding: 10px; border-bottom: 1px solid #e2e8f0; color: var(--success);">✅ <strong>${nome}</strong> entrou!</li>`;
+        });
+    }
+
+    // ==========================================
+    // 5. SISTEMA DE VOTAÇÃO
+    // ==========================================
+    function startVoting() {
+        if (myRole !== 'host') return;
+        
+        // Para o relógio
+        if (timerInterval) clearInterval(timerInterval);
+
+        const idsJogadores = Object.keys(hostConnections);
+        
+        // Prepara uma lista com IDs e Nomes para os celulares conseguirem criar os botões
+        const listaJogadores = idsJogadores.map(id => {
+            return { id: id, nome: hostConnections[id].name };
+        });
+
+        votosRecebidos = {}; // Zera os votos da rodada
+
+        // Envia a ordem de votação e a lista para todos os celulares
+        idsJogadores.forEach(id => {
+            hostConnections[id].conn.send({
+                type: 'START_VOTE',
+                payload: { lista: listaJogadores }
+            });
+        });
+
+        document.getElementById('host-timer').textContent = "VOTAÇÃO!";
+        document.getElementById('host-timer').style.color = "var(--warning)";
+    }
+
+    function castVote(suspectId) {
+        if (myRole === 'player') {
+            // Esconde os botões e mostra uma mensagem de aguarde
+            const area = document.getElementById('vote-buttons-area');
+            area.innerHTML = `
+                <h3 style="color: var(--success); text-align: center; margin-top: 20px;">✅ Voto Registrado!</h3>
+                <p style="text-align: center; color: var(--text-muted); margin-top: 10px;">Aguardando os outros jogadores votarem...</p>
+            `;
+            
+            // Envia o voto secretamente para o Host
+            sendToHost({
+                type: 'SUBMIT_VOTE',
+                payload: { suspeitoId: suspectId }
+            });
+        }
+    }
+
+    function apurarVotos() {
+        // Conta quantos votos cada ID recebeu
+        let contagem = {};
+        Object.values(votosRecebidos).forEach(votoId => {
+            contagem[votoId] = (contagem[votoId] || 0) + 1;
+        });
+
+        // Descobre quem foi o mais votado
+        let maisVotadoId = null;
+        let maxVotos = 0;
+        for (let id in contagem) {
+            if (contagem[id] > maxVotos) {
+                maxVotos = contagem[id];
+                maisVotadoId = id;
+            }
+        }
+
+        const nomeMaisVotado = hostConnections[maisVotadoId].name;
+        const nomeEspiaoVerdadeiro = hostConnections[espiaoId].name;
+        const eraOEspiao = (maisVotadoId === espiaoId);
+        
+        const dashboard = document.getElementById('screen-host-dashboard');
+
+        // Renderiza o resultado grandão na tela do Host!
+        if (eraOEspiao) {
+            dashboard.innerHTML = `
+                <h1 style="color: var(--success); font-size: 2.5rem; margin-top: 20px;">🕵️ Agentes Venceram!</h1>
+                <div class="card">
+                    <h2 style="color: var(--text-main);">O grupo capturou o Espião!</h2>
+                    <p style="font-size: 1.5rem; margin-top: 15px;"><strong>${nomeMaisVotado}</strong> recebeu a maioria dos votos e era o traidor.</p>
+                </div>
+                <button class="btn btn-primary" onclick="location.reload()">Jogar Novamente</button>
+            `;
+        } else {
+            dashboard.innerHTML = `
+                <h1 style="color: var(--danger); font-size: 2.5rem; margin-top: 20px;">🚨 O Espião Venceu!</h1>
+                <div class="card">
+                    <h2 style="color: var(--text-main);">O grupo condenou um inocente!</h2>
+                    <p style="font-size: 1.2rem; margin-top: 15px;">Vocês votaram em <strong>${nomeMaisVotado}</strong>.</p>
+                    <p style="font-size: 1.5rem; margin-top: 15px; color: var(--danger); font-weight: bold;">O verdadeiro espião era ${nomeEspiaoVerdadeiro}!</p>
+                </div>
+                <button class="btn btn-primary" onclick="location.reload()">Jogar Novamente</button>
+            `;
+        }
+
+        // Avisa os celulares que o jogo acabou
+        Object.keys(hostConnections).forEach(id => {
+            hostConnections[id].conn.send({ 
+                type: 'GAME_OVER', 
+                payload: { ganhou: eraOEspiao, espiao: nomeEspiaoVerdadeiro } 
+            });
+        });
+    }
+
+    // ==========================================
+    // 6. SISTEMA DE REVELAÇÃO DO ESPIÃO
+    // ==========================================
+    function startReveal() {
+        if (myRole !== 'host') return;
+        if (timerInterval) clearInterval(timerInterval);
+        
+        document.getElementById('host-timer').textContent = "PALPITE!";
+        document.getElementById('host-timer').style.color = "var(--danger)";
+
+        // Cria um array só com os nomes dos locais
+        const listaLocais = bancoDeLocais.map(l => l.nome);
+
+        // Envia a lista para o Espião, e manda os Agentes aguardarem
+        Object.keys(hostConnections).forEach(id => {
+            hostConnections[id].conn.send({
+                type: 'START_REVEAL',
+                payload: { locais: listaLocais, isSpy: (id === espiaoId) }
+            });
+        });
+    }
+
+    function submitGuess(palpite) {
+        if (myRole === 'player') {
+            const area = document.getElementById('vote-buttons-area');
+            area.innerHTML = `
+                <h3 style="color: var(--success); text-align: center; margin-top: 20px;">✅ Palpite Enviado!</h3>
+                <p style="text-align: center; color: var(--text-muted); margin-top: 10px;">Olhe para a tela do Host!</p>
+            `;
+            
+            // Envia o palpite para o Host validar
+            sendToHost({
+                type: 'SUBMIT_GUESS',
+                payload: { palpite: palpite }
+            });
+        }
+    }
+
+    return { initHost, initPlayer, startGame, startDiscussion, startVoting, castVote, startReveal, submitGuess };
+})();
+
+// Funções da Interface
+function showScreen(screenId) {
+    document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+    document.getElementById(screenId).classList.add('active');
+}
+
+function conectarJogador() {
+    const codigo = document.getElementById('input-room-code').value;
+    const nome = document.getElementById('input-player-name').value;
+    
+    if(!codigo || !nome) { 
+        alert("Preencha o código e seu nome!"); 
+        return; 
+    }
+    
+    event.target.textContent = "Conectando..."; 
+    GameNetwork.initPlayer(codigo, nome);
+}
+
+// ==========================================
+// PROTEÇÃO 3: RECUPERAR DADOS AO CARREGAR
+// ==========================================
+document.addEventListener('DOMContentLoaded', () => {
+    // Tenta recuperar os dados se o jogador tiver recarregado a página sem querer
+    const cachedRoom = sessionStorage.getItem('espiaoRoomCache');
+    const cachedPlayer = sessionStorage.getItem('espiaoPlayerCache');
+
+    if (cachedRoom && cachedPlayer) {
+        document.getElementById('input-room-code').value = cachedRoom;
+        document.getElementById('input-player-name').value = cachedPlayer;
+        
+        // Pula direto para a tela de digitar o código para agilizar a reconexão!
+        showScreen('screen-lobby-player');
+    }
+});
+</script>
+</body>
+</html>
