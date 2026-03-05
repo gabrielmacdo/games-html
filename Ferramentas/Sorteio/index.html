@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sorteios Avançados - App</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+
+    <main class="container">
+        <header class="header">
+            <div class="header-titles">
+                <h1><i class="fa-solid fa-dice-d20"></i> Sorteio<span class="highlight">Pro</span></h1>
+                <p>Ferramenta avançada para escolhas aleatórias e formação de grupos justos.</p>
+            </div>
+            <div class="header-actions">
+                <input type="file" id="importSorteioInput" accept=".txt" style="display: none;">
+                <button id="btnImportar" class="btn btn-outline" title="Importar sorteio anterior">
+                    <i class="fa-solid fa-file-import"></i> Importar Sorteio
+                </button>
+            </div>
+        </header>
+
+        <section class="card glass-panel main-interface">
+            <nav class="tabs">
+                <button class="tab-btn active" data-target="grupos"><i class="fa-solid fa-layer-group"></i>
+                    Grupos</button>
+                <button class="tab-btn" data-target="numeros"><i class="fa-solid fa-hashtag"></i>
+                    Números</button>
+                <button class="tab-btn" data-target="nomes"><i class="fa-solid fa-users"></i> Nomes</button>
+            </nav>
+
+            <div class="tab-content" id="tab-numeros">
+                <h2>Sorteio de Números</h2>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label for="numMin">Mínimo</label>
+                        <input type="number" id="numMin" value="1">
+                    </div>
+                    <div class="form-group">
+                        <label for="numMax">Máximo</label>
+                        <input type="number" id="numMax" value="100">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="numQtd">Quantidade a sortear</label>
+                    <input type="number" id="numQtd" value="1" min="1">
+                </div>
+                <div class="options-group">
+                    <label class="checkbox-box">
+                        <input type="checkbox" id="numRepeticao">
+                        <span class="checkmark"></span>
+                        Permitir repetição de números
+                    </label>
+                    <div class="radio-group mt-2">
+                        <label class="radio-box">
+                            <input type="radio" name="numFiltro" value="todos" checked>
+                            <span class="radiomark"></span>
+                            Todos
+                        </label>
+                        <label class="radio-box">
+                            <input type="radio" name="numFiltro" value="pares">
+                            <span class="radiomark"></span>
+                            Apenas Pares
+                        </label>
+                        <label class="radio-box">
+                            <input type="radio" name="numFiltro" value="impares">
+                            <span class="radiomark"></span>
+                            Apenas Ímpares
+                        </label>
+                    </div>
+                </div>
+                <button class="btn btn-primary btn-block mt-4 btn-sortear" data-type="numeros">
+                    Sortear Números <i class="fa-solid fa-play"></i>
+                </button>
+            </div>
+
+            <div class="tab-content" id="tab-nomes">
+                <h2>Sorteio de Nomes</h2>
+                <div class="form-group">
+                    <label>Inserir participantes</label>
+                    <div class="input-actions-wrapper">
+                        <textarea id="nomesList" rows="5" placeholder="Cole a lista de nomes aqui..."></textarea>
+                        <div class="file-upload-wrapper">
+                            <input type="file" id="nomesFile" accept=".txt,.csv">
+                            <label for="nomesFile" class="btn-file"><i class="fa-solid fa-upload"></i> Carregar
+                                .txt/.csv</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label for="nomesQtd">Quantidade de ganhadores</label>
+                        <input type="number" id="nomesQtd" value="1" min="1">
+                    </div>
+                    <div class="form-group">
+                        <label for="nomesSeparador">Separador</label>
+                        <select id="nomesSeparador">
+                            <option value="\n">Quebra de Linha (Enter)</option>
+                            <option value=",">Vírgula (,)</option>
+                            <option value=";">Ponto e Vírgula (;)</option>
+                        </select>
+                    </div>
+                </div>
+                <button class="btn btn-primary btn-block mt-4 btn-sortear" data-type="nomes">
+                    Sortear Nomes <i class="fa-solid fa-play"></i>
+                </button>
+            </div>
+
+            <div class="tab-content active" id="tab-grupos">
+                <h2>Formação de Grupos Inteligente</h2>
+                <div class="form-group">
+                    <label>Inserir lista (Nome + Atributo opcional)</label>
+                    <div class="input-actions-wrapper">
+                        <textarea id="gruposList" rows="5"
+                            placeholder="Ex:&#10;Carlos;Masculino&#10;Ana;Feminino&#10;Marcos;Masculino"></textarea>
+                        <div class="file-upload-wrapper">
+                            <input type="file" id="gruposFile" accept=".txt,.csv">
+                            <label for="gruposFile" class="btn-file"><i class="fa-solid fa-upload"></i> Carregar
+                                Lista</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="options-box mt-2 mb-3" id="groupAnalysis"
+                    style="display: none; border-color: rgba(88, 166, 255, 0.4); background: rgba(255, 255, 255, 0.05);">
+                    <div id="analysisResult" class="text-sm mb-2" style="color: var(--text-main);"></div>
+                    <div id="analysisSuggestions" class="d-flex gap-2 flex-wrap"
+                        style="display: flex; gap: 8px; flex-wrap: wrap;"></div>
+                </div>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label for="gruposModo">Modo de Separação</label>
+                        <select id="gruposModo">
+                            <option value="qtd_grupos">Nº Exato de Grupos</option>
+                            <option value="pessoas_por_grupo">Pessoas por Grupo</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="gruposValor">Quantidade</label>
+                        <input type="number" id="gruposValor" value="2" min="1">
+                    </div>
+                </div>
+                <div class="form-group options-box mt-3">
+                    <label class="checkbox-box toggle-atributos">
+                        <input type="checkbox" id="gruposUsarAtributos">
+                        <span class="checkmark"></span>
+                        <strong>Balancear usando Atributos (Avançado)</strong>
+                    </label>
+                    <div class="atributos-config hidden mt-3" id="atributosConfig">
+                        <p class="text-sm text-muted mb-2"><i class="fa-solid fa-circle-info"></i> O algoritmo irá
+                            distribuir os indivíduos baseando-se no atributo fornecido para balanceá-los de forma justa
+                            entre os grupos.</p>
+                        <div class="grid-2">
+                            <div class="form-group">
+                                <label for="gruposSeparadorLinha">Separador de Itens</label>
+                                <select id="gruposSeparadorLinha">
+                                    <option value="\n">Quebra de Linha (Enter)</option>
+                                    <option value=",">Vírgula (,)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="gruposSeparadorColuna">Separador Nome/Atributo</label>
+                                <input type="text" id="gruposSeparadorColuna" value=";" placeholder="Ex: ; ou -">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group options-box mt-3 mb-3">
+                        <label class="checkbox-box toggle-roles">
+                            <input type="checkbox" id="gruposUsarRoles">
+                            <span class="checkmark"></span>
+                            <strong>Atribuir Funções/Cargos aos Grupos</strong>
+                        </label>
+                        <div class="roles-config hidden mt-3" id="rolesConfig">
+                            <p class="text-sm text-muted mb-3"><i class="fa-solid fa-circle-info"></i> Adicione funções
+                                que serão sorteadas entre os membros de cada grupo resultante.</p>
+
+                            <div id="rolesList" class="roles-list mb-3">
+                                <!-- Roles added dynamically -->
+                            </div>
+
+                            <div class="role-input-group d-flex gap-2" style="position: relative;">
+                                <input type="text" id="roleEmoji" placeholder="😎 (Click)" readonly
+                                    style="width: 90px; text-align: center; cursor: pointer; caret-color: transparent;"
+                                    title="Escolher Emoji" value="👑">
+                                <div id="emojiPicker" class="emoji-picker hidden glass-panel">
+                                    <!-- Populated by JS -->
+                                </div>
+                                <input type="text" id="roleName" placeholder="Nome da Função (ex: Líder)"
+                                    style="flex: 1;">
+                                <button type="button" id="btnAddRole" class="btn btn-primary"
+                                    style="padding: 12px 15px;"><i class="fa-solid fa-plus"></i></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group options-box mb-3 hidden" id="antiRepetitionConfig">
+                        <label class="checkbox-box toggle-roles">
+                            <input type="checkbox" id="gruposUsarRodizio" checked>
+                            <span class="checkmark"></span>
+                            <strong><i class="fa-solid fa-arrows-spin"></i> Algoritmo de Rodízio
+                                (Anti-Repetição)</strong>
+                        </label>
+                        <p class="text-sm text-muted mt-2"><i class="fa-solid fa-circle-check text-whatsapp"></i>
+                            Histórico de sorteios carregado com sucesso! A ferramenta evitará ao máximo que as mesmas
+                            pessoas caiam juntas comparado aos últimos sorteios.</p>
+                    </div>
+
+                    <button class="btn btn-primary btn-block mt-4 btn-sortear" data-type="grupos">
+                        Formar Grupos <i class="fa-solid fa-play"></i>
+                    </button>
+                </div>
+
+        </section>
+    </main>
+
+    <!-- Modal Resultados -->
+    <div class="modal" id="resultModal">
+        <div class="modal-content glass-panel result-panel">
+            <span class="close-modal" id="closeModal">&times;</span>
+            <div class="rolling-drum" id="rollingDrum">
+                <i class="fa-solid fa-compact-disc fa-spin spinner-icon"></i>
+                <h3 id="rollingText">Sorteando...</h3>
+            </div>
+
+            <div class="result-display hidden" id="resultDisplay">
+                <h2 class="result-title"><i class="fa-solid fa-trophy text-gold"></i> Resultado Oficial</h2>
+
+                <div class="form-group" style="text-align: left; margin-bottom: 25px;">
+                    <label for="waTitleInput"><i class="fa-brands fa-whatsapp text-whatsapp"></i> Título
+                        Personalizado:</label>
+                    <input type="text" id="waTitleInput" value="RESULTADO OFICIAL"
+                        style="border-color: var(--whatsapp);">
+                </div>
+
+                <div class="wa-preview-box" id="waPreviewBox" style="margin-bottom: 25px; text-align: left;">
+                    <textarea id="waPreviewText" rows="12" readonly
+                        style="width: 100%; margin-top: 5px; font-family: monospace; font-size: 0.95em; background: rgba(0,0,0,0.4); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 8px; padding: 10px; resize: none;"></textarea>
+                    <div style="text-align: right; margin-top: 8px;">
+                        <button id="btnCopyPreview" class="btn btn-outline"
+                            style="padding: 6px 12px; font-size: 0.85em;"><i class="fa-solid fa-copy"></i> Copiar
+                            Texto</button>
+                    </div>
+                </div>
+
+                <div class="result-actions">
+                    <button id="btnDownload" class="btn btn-outline"><i class="fa-solid fa-download"></i> Baixar
+                        Relatório</button>
+                    <button id="btnRepetir" class="btn btn-primary"><i class="fa-solid fa-rotate-right"></i> Repetir
+                        Sorteio</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/script.js"></script>
+</body>
+
+</html>

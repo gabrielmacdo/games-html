@@ -1,0 +1,101 @@
+sku;descricao;quantidade;valor_unitario;custo_unitario
+TEC-001;Teclado Mecânico RGB;15;250,00;120,00
+MOU-002;Mouse Gamer 12000DPI;30;120,00;50,00
+MON-003;Monitor 24pol Full HD;5;850,00;780,00
+CAB-004;Cabo HDMI 2.0 Blindado;100;35,00;8,00
+PLV-005;Placa de Vídeo RTX 3060;2;2200,00;1950,00
+SSD-006;SSD NVMe 1TB;10;450,00;320,00
+GAB-007;Gabinete Vidro Temperado;8;350,00;290,00
+FON-008;Fonte 600W 80 Plus;12;280,00;180,00
+MEM-009;Memória RAM 16GB DDR4;20;220,00;190,00
+PRO-010;Processador i5 12400F;4;1100,00;980,00
+WBC-011;Webcam 1080p;25;180,00;90,00
+HDS-012;Headset 7.1 Surround;18;290,00;140,00
+CAD-013;Cadeira Gamer Ergonômica;3;900,00;850,00
+MES-014;Mesa Digitalizadora Pequena;7;250,00;120,00
+IMP-015;Impressora Tanque de Tinta;4;1200,00;1100,00
+CAR-016;Cartucho Tinta Preto;50;80,00;25,00
+PEN-017;Pen Drive 64GB;60;45,00;38,00
+HUB-018;Hub USB 3.0 4 Portas;15;60,00;20,00
+SUP-019;Suporte para Notebook;20;85,00;30,00
+FIL-020;Filtro de Linha 6 Tomadas;40;40,00;35,00
+ROT-021;Roteador Wi-Fi 6;8;350,00;200,00
+REP-022;Repetidor de Sinal;12;90,00;65,00
+CXS-023;Caixa de Som Bluetooth;22;150,00;140,00
+PRO-024;Projetor Mini LED;2;600,00;550,00
+TEL-025;Tela de Projeção 100pol;1;300,00;120,00
+PIL-026;Pilha Alcalina AA (Pacote);80;15,00;4,00
+BAT-027;Bateria Externa 10000mAh;25;90,00;75,00
+CAR-028;Carregador Rápido USB-C;35;70,00;25,00
+CAB-029;Cabo USB-C 2 Metros;45;30,00;5,00
+ADA-030;Adaptador Bluetooth 5.0;18;40,00;15,00
+NOT-031;Notebook Básico i3;5;2500,00;2350,00
+NOT-032;Notebook Gamer i7;2;6500,00;4500,00
+MOU-033;Mousepad Extra Grande;30;60,00;20,00
+SUP-034;Suporte Monitor Articulado;10;180,00;100,00
+MIC-035;Microfone Condensador USB;8;300,00;150,00
+BRA-036;Braço Articulado Microfone;12;120,00;80,00
+POP-037;Pop Filter;15;40,00;10,00
+RIN-038;Ring Light 10pol;20;80,00;35,00
+TP-039;Teclado Padrão ABNT2;40;50,00;45,00
+MOU-040;Mouse Óptico Básico;50;25,00;22,00
+SWI-041;Switch 8 Portas Gigabit;10;150,00;110,00
+CAB-042;Cabo de Rede 10m;25;40,00;12,00
+CON-043;Conector RJ45 (Pct 100);5;60,00;15,00
+ALI-044;Alicate de Crimpar;3;80,00;30,00
+TES-045;Testador de Cabos;4;50,00;20,00
+EST-046;Estabilizador 1000VA;6;200,00;180,00
+NOB-047;Nobreak 600VA;4;450,00;390,00
+PAS-048;Pasta Térmica Prata;30;35,00;8,00
+COO-049;Cooler para Processador;15;90,00;40,00
+FAN-050;Kit 3 Fans RGB;10;150,00;100,00
+SSD-051;SSD SATA 240GB;25;120,00;105,00
+SSD-052;SSD SATA 480GB;15;200,00;140,00
+HD-053;HD Externo 2TB;8;400,00;360,00
+CASE-054;Case para HD 2.5;20;35,00;12,00
+DOC-055;Dock Station HD;5;150,00;110,00
+ADA-056;Adaptador Wifi USB;30;45,00;38,00
+PLC-057;Placa de Som USB;15;25,00;5,00
+CAB-058;Cabo VGA 1.8m;10;15,00;14,00
+CAB-059;Cabo DisplayPort;12;50,00;20,00
+ADA-060;Adaptador DVI para HDMI;8;20,00;5,00
+ORG-061;Organizador de Cabos (m);50;5,00;1,00
+LIM-062;Limpa Telas Spray;40;15,00;4,00
+AR-063;Ar Comprimido Spray;20;35,00;28,00
+KIT-064;Kit Ferramentas Precisão;10;60,00;25,00
+PUL-065;Pulseira Antiestática;15;25,00;8,00
+MAN-066;Manta Antiestática;5;80,00;40,00
+LUV-067;Luva Nitrílica (Cx);2;40,00;35,00
+ISO-068;Álcool Isopropílico 1L;12;45,00;20,00
+COT-069;Cotonete Precisão;20;10,00;2,00
+PIN-070;Pinça Curva;25;15,00;3,00
+LUP-071;Lupa de Bancada LED;3;180,00;110,00
+FER-072;Ferro de Solda 60W;8;50,00;25,00
+SUG-073;Sugador de Solda;10;20,00;5,00
+EST-074;Estanho para Solda;15;40,00;25,00
+MUL-075;Multímetro Digital;6;60,00;30,00
+FON-076;Fonte Ajustável Bancada;1;350,00;250,00
+OSC-077;Osciloscópio Portátil;1;800,00;700,00
+ARD-078;Placa Arduino Uno;20;80,00;35,00
+RAS-079;Raspberry Pi 4;5;650,00;500,00
+SEN-080;Sensor de Presença;30;15,00;4,00
+REL-081;Módulo Relé 4 Canais;25;25,00;10,00
+JUM-082;Jumpers Macho-Fêmea;50;10,00;2,00
+PRO-083;Protoboard 830 Pontos;20;30,00;12,00
+LED-084;Kit LEDs Variados;40;25,00;5,00
+RES-085;Kit Resistores;35;20,00;3,00
+CAP-086;Kit Capacitores;30;25,00;4,00
+TRA-087;Transistor NPN;100;1,00;0,80
+DIO-088;Diodo Retificador;100;0,50;0,10
+BOT-089;Botão Push Button;80;2,00;0,30
+POT-090;Potenciômetro 10k;40;5,00;1,50
+DIS-091;Display LCD 16x2;15;35,00;15,00
+SER-092;Micro Servo Motor;20;25,00;10,00
+MOT-093;Motor DC com Roda;18;30,00;12,00
+BAT-094;Suporte Pilha AA;40;5,00;1,00
+CHA-095;Chassi Robô 2 Rodas;5;120,00;60,00
+MOD-096;Módulo Bluetooth HC-05;12;40,00;15,00
+ESP-097;Placa ESP32 Wifi;15;70,00;35,00
+CAM-098;Câmera para Raspberry;4;90,00;40,00
+DIS-099;Dissipador de Calor;50;5,00;1,00
+CXO-100;Caixa Organizadora P;30;15,00;14,00

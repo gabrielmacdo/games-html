@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador de Precificação & Auditoria de Vendas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        body { font-family: 'Inter', system-ui, sans-serif; background-color: #f3f4f6; }
+        .input-field { width: 100%; border-radius: 0.5rem; border: 1px solid #d1d5db; padding: 0.5rem 0.75rem; transition: all 0.2s; }
+        .input-field:focus { border-color: #3b82f6; ring: 2px; outline: none; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
+        .card-value { font-size: 1.5rem; font-weight: 700; color: #111827; }
+        
+        /* Modal Animation */
+        .modal { transition: opacity 0.25s ease; }
+        body.modal-active { overflow-x: hidden; overflow-y: visible !important; }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div class="max-w-7xl mx-auto">
+        <header class="mb-8 flex flex-col md:flex-row justify-between items-center bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-800"><i class="fas fa-chart-line text-blue-600 mr-2"></i>Pricing & Auditoria</h1>
+                <p class="text-gray-500 text-sm mt-1">Simulador de preços, markup e análise de rentabilidade.</p>
+            </div>
+            <div class="mt-4 md:mt-0">
+                <span class="px-4 py-2 bg-blue-50 text-blue-700 rounded-lg text-sm font-medium">Versão 3.0 (Markup Support)</span>
+            </div>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-12">
+            <div class="lg:col-span-4 space-y-6">
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                    <h2 class="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b">1. Simulador Individual</h2>
+                    
+                    <div class="space-y-4">
+                        <div class="input-group">
+                            <label class="text-sm font-medium text-gray-700">Descrição do Produto (Opcional)</label>
+                            <input type="text" id="prodDesc" class="input-field" placeholder="Ex: Cadeira Gamer">
+                        </div>
+                        <div class="input-group">
+                            <label class="text-sm font-medium text-gray-700">Custo Unitário (R$)</label>
+                            <input type="number" id="custo" class="input-field" value="100.00" step="0.01" oninput="calcular()">
+                        </div>
+                        <div class="input-group">
+                            <label class="text-sm font-medium text-gray-700">Incidências Variáveis (%)</label>
+                            <input type="number" id="impostos" class="input-field" value="18" step="0.1" oninput="calcular()">
+                            <p class="text-xs text-gray-400 mt-1">Impostos + Comissões + Taxas</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-blue-50 p-6 rounded-xl shadow-sm border border-blue-100">
+                    <div class="flex bg-white p-1 rounded-lg border border-gray-200 mb-4">
+                        <button id="btnModeMargin" onclick="setMode('margin')" class="flex-1 py-2 text-sm font-medium rounded-md bg-blue-600 text-white shadow-sm transition-all">Definir Margem</button>
+                        <button id="btnModePrice" onclick="setMode('price')" class="flex-1 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-50 transition-all">Definir Preço</button>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div class="input-group" id="groupMargem">
+                            <label class="text-sm font-medium text-blue-800">Meta de Margem (%)</label>
+                            <input type="number" id="margemAlvo" class="input-field border-blue-300" value="30" step="0.1" oninput="calcular()">
+                        </div>
+                        <div class="input-group opacity-50 pointer-events-none" id="groupPreco">
+                            <label class="text-sm font-medium text-gray-600">Preço de Venda (R$)</label>
+                            <input type="number" id="precoManual" class="input-field bg-gray-100" readonly step="0.01" oninput="calcular()">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="lg:col-span-8 space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
+                        <p class="text-sm text-gray-500">Preço Sugerido</p>
+                        <p class="card-value text-blue-600" id="kpiPreco">R$ 0,00</p>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100 relative overflow-hidden">
+                        <div id="indicadorSaude" class="absolute right-0 top-0 w-2 h-full bg-green-500"></div>
+                        <p class="text-sm text-gray-500">Margem Real (%)</p>
+                        <p class="card-value" id="kpiMargemPerc">0%</p>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
+                        <p class="text-sm text-gray-500">Lucro Bruto (R$)</p>
+                        <p class="card-value text-gray-800" id="kpiMargemValor">R$ 0,00</p>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
+                        <p class="text-sm text-gray-500">Markup Aplicado</p>
+                        <p class="card-value text-gray-600" id="kpiMarkup">0%</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 h-64">
+                        <canvas id="priceChart"></canvas>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 text-sm">
+                        <table class="w-full">
+                            <tbody class="divide-y divide-gray-100">
+                                <tr><td class="py-2 text-gray-600">Preço</td><td class="text-right font-bold" id="tblPreco">0</td></tr>
+                                <tr><td class="py-2 text-red-500">(-) Impostos</td><td class="text-right text-red-500" id="tblImpostos">0</td></tr>
+                                <tr><td class="py-2 text-red-500">(-) Custo</td><td class="text-right text-red-500" id="tblCusto">0</td></tr>
+                                <tr class="bg-blue-50"><td class="py-2 text-blue-800 font-bold">(=) Margem</td><td class="text-right text-blue-800 font-bold" id="tblMargem">0</td></tr>
+                            </tbody>
+                        </table>
+                        <div id="alertBox" class="hidden mt-4 p-2 bg-red-100 text-red-700 rounded text-center font-bold">Prejuízo Detectado!</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <hr class="border-gray-200 mb-12">
+
+        <div class="bg-white p-8 rounded-xl shadow-lg border border-gray-200">
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h2 class="text-xl font-bold text-gray-800">2. Auditoria de Vendas (Lote)</h2>
+                    <p class="text-gray-500 text-sm">Importe seu relatório de vendas para identificar ofensores de margem.</p>
+                </div>
+                
+                <div class="flex items-center gap-3">
+                    <button onclick="toggleModal('modal-ajuda')" class="text-gray-500 hover:text-blue-600 transition-colors" title="Ajuda">
+                        <i class="fas fa-question-circle text-2xl"></i>
+                    </button>
+                    
+                    <label class="cursor-pointer bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors shadow-sm flex items-center">
+                        <i class="fas fa-upload mr-2"></i> Importar CSV
+                        <input type="file" id="csvInput" accept=".csv" class="hidden" onchange="processarCSV(this)">
+                    </label>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm text-left text-gray-600">
+                    <thead class="text-xs text-gray-700 uppercase bg-gray-50 border-b border-gray-200">
+                        <tr>
+                            <th class="px-4 py-3">Status</th>
+                            <th class="px-4 py-3">SKU</th>
+                            <th class="px-4 py-3">Produto</th>
+                            <th class="px-4 py-3 text-right">Qtd</th>
+                            <th class="px-4 py-3 text-right">Preço Médio</th>
+                            <th class="px-4 py-3 text-right">Custo Médio</th>
+                            <th class="px-4 py-3 text-right text-gray-500">Markup</th> 
+                            <th class="px-4 py-3 text-right">Margem %</th>
+                            <th class="px-4 py-3 text-center">Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelaResultados">
+                        <tr>
+                            <td colspan="9" class="px-4 py-8 text-center text-gray-400">
+                                <i class="fas fa-file-csv text-4xl mb-3 block opacity-20"></i>
+                                Nenhum arquivo importado. Carregue um CSV para começar.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <div id="modal-ajuda" class="modal opacity-0 pointer-events-none fixed w-full h-full top-0 left-0 flex items-center justify-center z-50">
+        <div class="modal-overlay absolute w-full h-full bg-gray-900 opacity-50"></div>
+        <div class="modal-container bg-white w-11/12 md:max-w-lg mx-auto rounded-xl shadow-2xl z-50 overflow-y-auto">
+            <div class="modal-content py-4 text-left px-6">
+                <div class="flex justify-between items-center pb-3 border-b border-gray-200">
+                    <p class="text-2xl font-bold text-gray-800">Formato CSV Aceito</p>
+                    <div class="modal-close cursor-pointer z-50" onclick="toggleModal('modal-ajuda')">
+                        <i class="fas fa-times text-gray-500 hover:text-red-500"></i>
+                    </div>
+                </div>
+                <div class="my-5 space-y-4">
+                    <p class="text-gray-600 text-sm">O sistema aceita separadores (;) ou (,). As colunas necessárias são:</p>
+                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 text-xs font-mono text-gray-700">
+                        sku, descricao, quantidade, valor_unitario, custo_unitario
+                    </div>
+                    <p class="text-xs text-gray-500">O sistema detecta automaticamente números no formato BR (1.000,00) ou US (1000.00).</p>
+                </div>
+                <div class="flex justify-end pt-2">
+                    <button class="px-4 py-2 bg-blue-600 rounded-lg text-white hover:bg-blue-700" onclick="toggleModal('modal-ajuda')">Entendi</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. Lógica do Simulador Unitário ---
+        let currentMode = 'margin';
+        let chartInstance = null;
+
+        const formatCurrency = (val) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
+        const formatPercent = (val) => new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 2 }).format(val) + '%';
+
+        function setMode(mode) {
+            currentMode = mode;
+            const btnMargin = document.getElementById('btnModeMargin');
+            const btnPrice = document.getElementById('btnModePrice');
+            const margemInput = document.getElementById('margemAlvo');
+            const precoInput = document.getElementById('precoManual');
+
+            if (mode === 'margin') {
+                btnMargin.className = "flex-1 py-2 text-sm font-medium rounded-md bg-blue-600 text-white shadow-sm transition-all";
+                btnPrice.className = "flex-1 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-50 transition-all";
+                document.getElementById('groupMargem').classList.remove('opacity-50', 'pointer-events-none');
+                document.getElementById('groupPreco').classList.add('opacity-50', 'pointer-events-none');
+                margemInput.readOnly = false;
+                precoInput.readOnly = true;
+                precoInput.classList.add('bg-gray-100');
+            } else {
+                btnPrice.className = "flex-1 py-2 text-sm font-medium rounded-md bg-blue-600 text-white shadow-sm transition-all";
+                btnMargin.className = "flex-1 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-50 transition-all";
+                document.getElementById('groupPreco').classList.remove('opacity-50', 'pointer-events-none');
+                document.getElementById('groupMargem').classList.add('opacity-50', 'pointer-events-none');
+                precoInput.readOnly = false;
+                precoInput.classList.remove('bg-gray-100');
+                margemInput.readOnly = true;
+            }
+            calcular();
+        }
+
+        function calcular() {
+            const custo = parseFloat(document.getElementById('custo').value) || 0;
+            const impostosPerc = parseFloat(document.getElementById('impostos').value) || 0;
+            
+            let precoVenda = 0;
+            let margemPerc = 0;
+            let margemValor = 0;
+
+            if (currentMode === 'margin') {
+                const targetMargin = parseFloat(document.getElementById('margemAlvo').value) || 0;
+                const divisor = 1 - ((impostosPerc + targetMargin) / 100);
+                if (divisor > 0) {
+                    precoVenda = custo / divisor;
+                    document.getElementById('precoManual').value = precoVenda.toFixed(2);
+                    margemPerc = targetMargin;
+                }
+            } else {
+                precoVenda = parseFloat(document.getElementById('precoManual').value) || 0;
+                if (precoVenda > 0) {
+                    const impValor = precoVenda * (impostosPerc/100);
+                    margemValor = precoVenda - custo - impValor;
+                    margemPerc = (margemValor / precoVenda) * 100;
+                    document.getElementById('margemAlvo').value = margemPerc.toFixed(2);
+                }
+            }
+
+            // Derivados
+            const valorImpostos = precoVenda * (impostosPerc / 100);
+            margemValor = precoVenda - custo - valorImpostos;
+            
+            // Cálculo Markup (com proteção de divisão por zero)
+            let markup = 0;
+            if (custo > 0) {
+                markup = ((precoVenda - custo) / custo) * 100;
+            }
+
+            updateUI(precoVenda, margemValor, margemPerc, valorImpostos, custo, markup);
+        }
+
+        function updateUI(preco, margemVal, margemPerc, impVal, custo, markup) {
+            document.getElementById('kpiPreco').innerText = formatCurrency(preco);
+            document.getElementById('kpiMargemValor').innerText = formatCurrency(margemVal);
+            document.getElementById('kpiMargemPerc').innerText = formatPercent(margemPerc);
+            document.getElementById('kpiMarkup').innerText = formatPercent(markup); // Atualiza Markup
+
+            document.getElementById('tblPreco').innerText = formatCurrency(preco);
+            document.getElementById('tblImpostos').innerText = formatCurrency(impVal);
+            document.getElementById('tblCusto').innerText = formatCurrency(custo);
+            document.getElementById('tblMargem').innerText = formatCurrency(margemVal);
+
+            const indicador = document.getElementById('indicadorSaude');
+            const textoKPI = document.getElementById('kpiMargemPerc');
+            const alertBox = document.getElementById('alertBox');
+            
+            indicador.className = "absolute right-0 top-0 w-2 h-full transition-colors";
+            
+            if (margemPerc < 0) {
+                indicador.classList.add('bg-red-500');
+                textoKPI.classList.replace('text-gray-800', 'text-red-600');
+                alertBox.classList.remove('hidden');
+            } else if (margemPerc < 15) {
+                indicador.classList.add('bg-yellow-400');
+                textoKPI.classList.remove('text-red-600');
+                alertBox.classList.add('hidden');
+            } else {
+                indicador.classList.add('bg-green-500');
+                textoKPI.classList.remove('text-red-600');
+                alertBox.classList.add('hidden');
+            }
+
+            updateChart(custo, impVal, margemVal);
+        }
+
+        function updateChart(custo, impVal, margemVal) {
+            const ctx = document.getElementById('priceChart').getContext('2d');
+            const chartData = {
+                labels: ['Custo', 'Impostos', 'Margem'],
+                datasets: [{
+                    data: [custo, impVal, Math.max(0, margemVal)],
+                    backgroundColor: ['#ef4444', '#f59e0b', '#10b981'],
+                    borderWidth: 0
+                }]
+            };
+
+            if (chartInstance) {
+                chartInstance.data = chartData;
+                chartInstance.update();
+            } else {
+                chartInstance = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: chartData,
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } }
+                });
+            }
+        }
+
+        // --- 2. Lógica CSV ---
+        function toggleModal(modalID) {
+            const modal = document.getElementById(modalID);
+            const body = document.querySelector('body');
+            modal.classList.toggle('opacity-0');
+            modal.classList.toggle('pointer-events-none');
+            body.classList.toggle('modal-active');
+        }
+
+        function parseNumber(val) {
+            if (!val) return 0;
+            val = val.trim();
+            if (val.includes(',') && val.includes('.')) {
+                val = val.replace(/\./g, '').replace(',', '.'); 
+            } else if (val.includes(',')) {
+                val = val.replace(',', '.');
+            }
+            return parseFloat(val) || 0;
+        }
+
+        function processarCSV(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const text = e.target.result;
+                const lines = text.split('\n').filter(line => line.trim() !== '');
+                
+                if (lines.length === 0) return;
+
+                const firstLine = lines[0];
+                const separator = (firstLine.match(/;/g) || []).length > (firstLine.match(/,/g) || []).length ? ';' : ',';
+                const rows = lines.map(row => row.split(separator));
+                
+                const headers = rows[0].map(h => h.trim().toLowerCase().replace(/['"]/g, ''));
+                const idxSku = headers.indexOf('sku');
+                const idxDesc = headers.indexOf('descricao');
+                const idxQtd = headers.indexOf('quantidade');
+                const idxVenda = headers.indexOf('valor_unitario');
+                const idxCusto = headers.indexOf('custo_unitario');
+
+                if (idxSku === -1 || idxVenda === -1 || idxCusto === -1) {
+                    alert(`Erro: Colunas obrigatórias não encontradas no arquivo (separador detectado: "${separator}")`);
+                    return;
+                }
+
+                const agrupado = {};
+
+                for (let i = 1; i < rows.length; i++) {
+                    const col = rows[i];
+                    if (col.length < headers.length) continue;
+
+                    const sku = col[idxSku] ? col[idxSku].replace(/['"]/g, '').trim() : '';
+                    const qtd = parseNumber(col[idxQtd]) || 1;
+                    const vendaUnit = parseNumber(col[idxVenda]);
+                    const custoUnit = parseNumber(col[idxCusto]);
+                    
+                    let desc = idxDesc > -1 ? col[idxDesc] : sku;
+                    if(desc) desc = desc.replace(/['"]/g, '').trim();
+
+                    if (!sku) continue;
+
+                    if (!agrupado[sku]) {
+                        agrupado[sku] = { sku, desc, qtdTotal: 0, faturamentoTotal: 0, custoTotal: 0 };
+                    }
+
+                    agrupado[sku].qtdTotal += qtd;
+                    agrupado[sku].faturamentoTotal += (vendaUnit * qtd);
+                    agrupado[sku].custoTotal += (custoUnit * qtd);
+                }
+
+                renderizarTabela(agrupado);
+            };
+            reader.readAsText(file, "ISO-8859-1");
+        }
+
+        function renderizarTabela(dados) {
+            const tbody = document.getElementById('tabelaResultados');
+            tbody.innerHTML = '';
+
+            const impostosGeral = parseFloat(document.getElementById('impostos').value) || 0;
+
+            Object.values(dados).forEach(item => {
+                const precoMedio = item.faturamentoTotal / item.qtdTotal;
+                const custoMedio = item.custoTotal / item.qtdTotal;
+                
+                const impostosValor = precoMedio * (impostosGeral / 100);
+                const margemValor = precoMedio - custoMedio - impostosValor;
+                const margemPerc = (margemValor / precoMedio) * 100;
+                
+                // Cálculo Markup na Tabela
+                let markup = 0;
+                if (custoMedio > 0) {
+                    markup = ((precoMedio - custoMedio) / custoMedio) * 100;
+                }
+
+                let statusColor = 'bg-green-100 text-green-800';
+                let icon = '<i class="fas fa-check-circle"></i>';
+                
+                if (margemPerc < 0) {
+                    statusColor = 'bg-red-100 text-red-800';
+                    icon = '<i class="fas fa-times-circle"></i>';
+                } else if (margemPerc < 15) {
+                    statusColor = 'bg-yellow-100 text-yellow-800';
+                    icon = '<i class="fas fa-exclamation-circle"></i>';
+                }
+
+                const tr = document.createElement('tr');
+                tr.className = "bg-white border-b hover:bg-gray-50 transition-colors";
+                tr.innerHTML = `
+                    <td class="px-4 py-3"><span class="${statusColor} px-2 py-1 rounded-full text-xs font-bold">${icon} ${margemPerc.toFixed(1)}%</span></td>
+                    <td class="px-4 py-3 font-mono text-xs">${item.sku}</td>
+                    <td class="px-4 py-3 font-medium text-gray-800">${item.desc}</td>
+                    <td class="px-4 py-3 text-right">${item.qtdTotal}</td>
+                    <td class="px-4 py-3 text-right">${formatCurrency(precoMedio)}</td>
+                    <td class="px-4 py-3 text-right text-gray-500">${formatCurrency(custoMedio)}</td>
+                    <td class="px-4 py-3 text-right text-gray-500 text-xs">${formatPercent(markup)}</td>
+                    <td class="px-4 py-3 text-right font-bold ${margemPerc < 0 ? 'text-red-600' : 'text-gray-700'}">${formatPercent(margemPerc)}</td>
+                    <td class="px-4 py-3 text-center">
+                        <button onclick="carregarSimulador('${item.desc}', ${custoMedio}, ${precoMedio})" class="text-blue-600 hover:text-blue-800 hover:bg-blue-100 p-2 rounded transition-colors" title="Simular Correção">
+                            <i class="fas fa-calculator"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function carregarSimulador(desc, custo, preco) {
+            document.getElementById('prodDesc').value = desc;
+            document.getElementById('custo').value = custo.toFixed(2);
+            document.getElementById('precoManual').value = preco.toFixed(2);
+            setMode('price'); 
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            const card = document.querySelector('.bg-white');
+            card.classList.add('ring-2', 'ring-blue-500');
+            setTimeout(() => card.classList.remove('ring-2', 'ring-blue-500'), 1000);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => calcular());
+
+    </script>
+</body>
+</html>
