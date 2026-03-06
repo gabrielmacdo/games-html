@@ -4,13 +4,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Arcade de Jogos</title>
+    <title>Central de Projetos</title>
     <style>
         /* --- RESET E BASE --- */
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
+        }
+
+        /* --- ROLAGEM SUAVE --- */
+        html {
+            scroll-behavior: smooth;
         }
 
         body {
@@ -24,7 +29,7 @@
         /* --- CABEÇALHO --- */
         header {
             text-align: center;
-            margin-bottom: 40px;
+            margin-bottom: 20px;
             padding: 20px 0;
         }
 
@@ -44,17 +49,70 @@
             font-size: 1.1em;
         }
 
-        /* --- GRID DE JOGOS --- */
+        /* --- BOTÕES DE NAVEGAÇÃO --- */
+        .nav-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 25px;
+        }
+
+        .nav-btn {
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+            text-decoration: none;
+            padding: 10px 25px;
+            border-radius: 50px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .nav-btn:hover {
+            background: #00d2ff;
+            color: #000;
+            border-color: #00d2ff;
+            box-shadow: 0 0 15px rgba(0, 210, 255, 0.4);
+            transform: translateY(-3px);
+        }
+
+        /* --- TÍTULOS DE SEÇÃO E DIVISOR --- */
+        .section-title {
+            font-size: 2em;
+            text-align: center;
+            margin: 40px 0 30px 0;
+            color: #fff;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            /* Adiciona um espaçamento extra acima do título para quando a página rolar via link */
+            scroll-margin-top: 20px;
+        }
+
+        .section-divider {
+            border: none;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(0, 210, 255, 0.5), transparent);
+            margin: 50px auto;
+            width: 80%;
+            max-width: 800px;
+        }
+
+        /* --- GRID DE PROJETOS --- */
         .games-container {
             max-width: 1200px;
             margin: 0 auto;
             display: grid;
-            /* Responsividade automática: ajusta colunas conforme a tela */
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 25px;
         }
 
-        /* --- CARTÃO DO JOGO --- */
+        /* --- CARTÃO --- */
         .game-card {
             background: rgba(255, 255, 255, 0.05);
             border-radius: 16px;
@@ -62,7 +120,7 @@
             text-align: center;
             text-decoration: none;
             color: white;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
             border: 1px solid rgba(255, 255, 255, 0.1);
             position: relative;
             overflow: hidden;
@@ -74,8 +132,6 @@
 
         .game-card:hover {
             transform: translateY(-10px);
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
-            border-color: #00d2ff;
             background: rgba(255, 255, 255, 0.1);
         }
 
@@ -106,13 +162,13 @@
             font-weight: bold;
             text-transform: uppercase;
             margin-top: auto;
-            /* Empurra o botão para baixo */
             display: inline-block;
-            transition: background 0.3s;
+            transition: background 0.3s, box-shadow 0.3s;
         }
 
         .game-card:hover .play-btn {
             background-color: #fff;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
         }
 
         /* --- RODAPÉ --- */
@@ -121,6 +177,7 @@
             margin-top: 50px;
             color: #666;
             font-size: 0.9em;
+            padding-bottom: 20px;
         }
 
         /* --- RESPONSIVIDADE ESPECÍFICA --- */
@@ -132,6 +189,20 @@
             .games-container {
                 padding: 0 10px;
             }
+            
+            .section-title {
+                font-size: 1.5em;
+            }
+
+            .nav-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .nav-btn {
+                width: 80%;
+                justify-content: center;
+            }
         }
     </style>
 </head>
@@ -139,12 +210,49 @@
 <body>
 
     <header>
-        <h1>🎮 Central de Jogos</h1>
-        <p class="subtitle">Escolha sua diversão e jogue agora!</p>
+        <h1>💻 Central de Projetos</h1>
+        <p class="subtitle">Escolha sua diversão ou utilize uma de nossas ferramentas!</p>
+        
+        <nav class="nav-buttons">
+            <a href="#ferramentas" class="nav-btn">🛠️ Ferramentas</a>
+            <a href="#jogos" class="nav-btn">🕹️ Jogos</a>
+        </nav>
     </header>
 
-    <main class="games-container">
-		<a href="oespiao/index_espiao.html" class="game-card" 
+    <h2 id="ferramentas" class="section-title">🛠️ Ferramentas Online</h2>
+    
+    <section class="games-container">
+        <a href="Ferramentas/Analise_Preco_Rentabilidade/preco_rentabilidade.html" class="game-card" 
+            style="border-color: #10b981; box-shadow: 0 0 15px rgba(16, 185, 129, 0.4);">
+            <span class="game-icon">📈</span>
+            <span class="game-title">Análise de Preço</span>
+            <span class="game-tag">Finanças • Rentabilidade</span>
+            <span class="play-btn">Acessar</span>
+        </a>
+
+        <a href="Ferramentas/Sorteio/index.html" class="game-card" 
+            style="border-color: #fbbf24; box-shadow: 0 0 15px rgba(251, 191, 36, 0.4);">
+            <span class="game-icon">🎲</span>
+            <span class="game-title">Sorteio de Grupos</span>
+            <span class="game-tag">Utilitário • Aleatório</span>
+            <span class="play-btn">Acessar</span>
+        </a>
+
+        <a href="ferramentas/orcamento/index.html" class="game-card" 
+            style="border-color: #3b82f6; box-shadow: 0 0 15px rgba(59, 130, 246, 0.4);">
+            <span class="game-icon">💼</span>
+            <span class="game-title">Gerador de Orçamentos</span>
+            <span class="game-tag">Gestão • JSON • Offline</span>
+            <span class="play-btn">Acessar</span>
+        </a>
+    </section>
+
+    <hr class="section-divider">
+
+    <h2 id="jogos" class="section-title">🕹️ Arcade de Jogos</h2>
+
+    <section class="games-container">
+        <a href="oespiao/index_espiao.html" class="game-card" 
             style="border-color: #ef4444; box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);">
             <span class="game-icon">🕵️</span>
             <span class="game-title">O Espião</span>
@@ -152,7 +260,7 @@
             <span class="play-btn">Jogar</span>
         </a>
 		
-		<a href="Pass_Repass/index_passa_repassa.html" class="game-card" 
+        <a href="Pass_Repass/index_passa_repassa.html" class="game-card" 
 			style="border-color: #6366f1; box-shadow: 0 0 15px rgba(99, 102, 241, 0.4);">
 			<span class="game-icon">⚡</span>
 			<span class="game-title">Quiz Master</span>
@@ -160,8 +268,8 @@
 			<span class="play-btn">Jogar</span>
 		</a>
 	
-		<a href="Batalha_Naval/index.html" class="game-card"
-            style="border-color: #00ffff; box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);">
+        <a href="Batalha_Naval/index.html" class="game-card"
+            style="border-color: #0ea5e9; box-shadow: 0 0 15px rgba(14, 165, 233, 0.4);">
             <span class="game-icon">🚢</span>
             <span class="game-title">Batalha Naval</span>
             <span class="game-tag">Multiplayer • Action • Clássico</span>
@@ -169,87 +277,97 @@
         </a>
 
         <a href="retro-space-shooter/index.html" class="game-card"
-            style="border-color: #00ffff; box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);">
+            style="border-color: #ec4899; box-shadow: 0 0 15px rgba(236, 72, 153, 0.4);">
             <span class="game-icon">🚀</span>
             <span class="game-title">Retro Space Shooter</span>
             <span class="game-tag">3D • Action • Sci-Fi</span>
             <span class="play-btn">Jogar</span>
         </a>
 
-        <a href="Jogo_Stop/stop.html" class="game-card">
+        <a href="Jogo_Stop/stop.html" class="game-card"
+            style="border-color: #f97316; box-shadow: 0 0 15px rgba(249, 115, 22, 0.4);">
             <span class="game-icon">🛑</span>
             <span class="game-title">Stop / Adedonha</span>
             <span class="game-tag">Multiplayer • Palavras</span>
             <span class="play-btn">Jogar</span>
         </a>
 
-        <a href="Jogos_Gerais/index_mimica - 2 - att.html" class="game-card">
+        <a href="Jogos_Gerais/index_mimica - 2 - att.html" class="game-card"
+            style="border-color: #eab308; box-shadow: 0 0 15px rgba(234, 179, 8, 0.4);">
             <span class="game-icon">🎭</span>
             <span class="game-title">Mímica</span>
             <span class="game-tag">Grupo • Atuação</span>
             <span class="play-btn">Jogar</span>
         </a>
 
-        <a href="Jogos_Gerais/index_jogo_memoria_Niveis.html" class="game-card">
+        <a href="Jogos_Gerais/index_jogo_memoria_Niveis.html" class="game-card"
+            style="border-color: #14b8a6; box-shadow: 0 0 15px rgba(20, 184, 166, 0.4);">
             <span class="game-icon">🧠</span>
             <span class="game-title">Jogo da Memória</span>
             <span class="game-tag">Raciocínio • Níveis</span>
             <span class="play-btn">Jogar</span>
         </a>
 
-        <a href="Jogos_Gerais/index_snake_cobrinha.html" class="game-card">
+        <a href="Jogos_Gerais/index_snake_cobrinha.html" class="game-card"
+            style="border-color: #22c55e; box-shadow: 0 0 15px rgba(34, 197, 94, 0.4);">
             <span class="game-icon">🐍</span>
             <span class="game-title">Snake</span>
             <span class="game-tag">Clássico • Agilidade</span>
             <span class="play-btn">Jogar</span>
         </a>
 
-        <a href="Jogos_Gerais/index_jogo_da_velha.html" class="game-card">
+        <a href="Jogos_Gerais/index_jogo_da_velha.html" class="game-card"
+            style="border-color: #8b5cf6; box-shadow: 0 0 15px rgba(139, 92, 246, 0.4);">
             <span class="game-icon">❌⭕</span>
             <span class="game-title">Jogo da Velha</span>
             <span class="game-tag">Estratégia • Rápido</span>
             <span class="play-btn">Jogar</span>
         </a>
 
-        <a href="Jogos_Gerais/index_forca11.html" class="game-card">
+        <a href="Jogos_Gerais/index_forca11.html" class="game-card"
+            style="border-color: #be123c; box-shadow: 0 0 15px rgba(190, 18, 60, 0.4);">
             <span class="game-icon">😵</span>
             <span class="game-title">Forca</span>
             <span class="game-tag">Palavras • Adivinhação</span>
             <span class="play-btn">Jogar</span>
         </a>
 
-        <a href="QUEM_SOU_EU/quemsoueu02_Final.html" class="game-card">
+        <a href="QUEM_SOU_EU/quemsoueu02_Final.html" class="game-card"
+            style="border-color: #06b6d4; box-shadow: 0 0 15px rgba(6, 182, 212, 0.4);">
             <span class="game-icon">❓</span>
             <span class="game-title">Quem Sou Eu?</span>
             <span class="game-tag">Grupo • Adivinhação</span>
             <span class="play-btn">Jogar</span>
         </a>
 
-        <a href="Policia_e_Ladrao/Polica_e_Ladrao11_digital.html" class="game-card">
+        <a href="Policia_e_Ladrao/Polica_e_Ladrao11_digital.html" class="game-card"
+            style="border-color: #2563eb; box-shadow: 0 0 15px rgba(37, 99, 235, 0.4);">
             <span class="game-icon">👮‍♂️</span>
-            <span class="game-title">Polícia e Ladrão(DIGITAL)</span>
+            <span class="game-title">Polícia e Ladrão (Digital)</span>
             <span class="game-tag">Ação • Estratégia</span>
             <span class="play-btn">Jogar</span>
         </a>
 
-        <a href="Policia_e_Ladrao/Polica_e_Ladrao04_cartas.html" class="game-card">
-            <span class="game-icon">👮‍♂️</span>
-            <span class="game-title">Polícia e Ladrão(CARTAS)</span>
+        <a href="Policia_e_Ladrao/Polica_e_Ladrao04_cartas.html" class="game-card"
+            style="border-color: #ea580c; box-shadow: 0 0 15px rgba(234, 88, 12, 0.4);">
+            <span class="game-icon">🃏</span>
+            <span class="game-title">Polícia e Ladrão (Cartas)</span>
             <span class="game-tag">Ação • Estratégia</span>
             <span class="play-btn">Jogar</span>
         </a>
 
-        <a href="Jogo_Bingo/bingo5.html" class="game-card">
-            <span class="game-icon">🧑‍🚀️</span>
+        <a href="Jogo_Bingo/bingo5.html" class="game-card"
+            style="border-color: #ca8a04; box-shadow: 0 0 15px rgba(202, 138, 4, 0.4);">
+            <span class="game-icon">🎱</span>
             <span class="game-title">BINGO</span>
-            <span class="game-tag">Sorte • Estratégia</span>
+            <span class="game-tag">Sorte • Grupo</span>
             <span class="play-btn">Jogar</span>
         </a>
 
-    </main>
+    </section>
 
     <footer>
-        <p>Desenvolvido para diversão • Versão 1.0</p>
+        <p>Desenvolvido para diversão e produtividade • Versão 2.0</p>
     </footer>
 
 </body>
