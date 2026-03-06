@@ -11,6 +11,7 @@ class App {
         this.initDataBindings();
         this.initRouting();
         this.initBackupRestore();
+        this.initHelpModal();
 
         // Load initial hash
         window.dispatchEvent(new Event('hashchange'));
@@ -101,6 +102,44 @@ class App {
                 restoreInput.value = '';
             };
             reader.readAsText(file);
+        });
+    }
+
+    initHelpModal() {
+        const helpBtn = document.getElementById('help-btn');
+        const modal = document.getElementById('help-modal');
+        const modalContent = document.getElementById('help-modal-content');
+        const closeBtn1 = document.getElementById('close-help-btn');
+        const closeBtn2 = document.getElementById('close-help-footer-btn');
+
+        if (!helpBtn || !modal) return;
+
+        const openModal = () => {
+            modal.classList.remove('hidden');
+            // Wait for display:block to apply before changing opacity
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    modal.classList.remove('opacity-0');
+                    modalContent.classList.remove('opacity-0', 'scale-95');
+                    modalContent.classList.add('scale-100');
+                });
+            });
+        };
+
+        const closeModal = () => {
+             modal.classList.add('opacity-0');
+             modalContent.classList.remove('scale-100');
+             modalContent.classList.add('opacity-0', 'scale-95');
+             setTimeout(() => {
+                 modal.classList.add('hidden');
+             }, 300); // 300ms matches Tailwind transition-all duration default or standard fade
+        };
+
+        helpBtn.addEventListener('click', openModal);
+        closeBtn1.addEventListener('click', closeModal);
+        closeBtn2.addEventListener('click', closeModal);
+        modal.addEventListener('click', (e) => {
+             if (e.target === modal) closeModal();
         });
     }
 
