@@ -1,0 +1,149 @@
+/* style.css - Tailwind Customizations & Transitions */
+
+/* Custom Scrollbar for a Premium Look */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: #cbd5e1;
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background-color: #94a3b8;
+}
+
+/* Remove Arrows from Number Inputs */
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+input[type=number] {
+    -moz-appearance: textfield;
+    /* Firefox */
+}
+
+/* Base View Transition */
+.view-enter {
+    opacity: 0;
+    transform: translateY(10px);
+    animation: fadeUp 0.3s ease-out forwards;
+}
+
+@keyframes fadeUp {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Glassmorphism utilities */
+.glass {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+/* Active Nav Link */
+.nav-link.active {
+    background-color: #eff6ff;
+    /* primary-50 */
+    color: #2563eb;
+    /* primary-600 */
+}
+
+.nav-link.active svg {
+    color: #3b82f6;
+    /* primary-500 */
+}
+
+/* Responsive Table Cards (Mobile) */
+@media (max-width: 640px) {
+    .responsive-table thead {
+        display: none;
+    }
+
+    .responsive-table tbody tr {
+        display: block;
+        margin-bottom: 1rem;
+        background-color: white;
+        border-radius: 0.5rem;
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        border: 1px solid #e2e8f0;
+    }
+
+    .responsive-table td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid #f1f5f9;
+        text-align: right;
+    }
+
+    .responsive-table td:last-child {
+        border-bottom: none;
+    }
+
+    .responsive-table td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        color: #475569;
+        text-align: left;
+        margin-right: 1rem;
+    }
+}
+
+/* Print Media Queries */
+@media print {
+    @page {
+        margin: 10mm;
+        size: A4;
+    }
+
+    body {
+        background-color: white !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    /* Hide the entire App UI */
+    #sidebar,
+    header,
+    #app-content,
+    #toast-container,
+    #mobile-overlay {
+        display: none !important;
+    }
+
+    /* Make the entire main container stretch */
+    main {
+        overflow: visible !important;
+        background: white !important;
+    }
+
+    /* Show the print view container */
+    #print-view-container {
+        display: block !important;
+        width: 100%;
+        color: black !important;
+        background: white !important;
+    }
+
+    /* Prevent aggressive page breaks on table rows */
+    tr {
+        page-break-inside: avoid;
+    }
+
+    .print-keep-together {
+        page-break-inside: avoid;
+    }
+}
