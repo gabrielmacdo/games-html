@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0" />
+  <title>3D Dice Simulator</title>
+  <script type="module" crossorigin src="/assets/index-DyFe3VYN.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-ot-gHTDf.css">
+</head>
+
+<body>
+  <div id="debug-info"
+    style="display: none; position: absolute; top: 10px; left: 10px; color: #00ff00; z-index: 9999; font-family: monospace; font-size: 14px; pointer-events: none; background: rgba(0,0,0,0.5); padding: 5px; border-radius: 5px;">
+  </div>
+
+  <!-- Main Menu Overlay -->
+  <div id="main-menu">
+    <button id="help-btn" class="icon-btn" aria-label="Ajuda">?</button>
+
+    <div class="menu-card">
+      <h1 class="title">Simulador de Dados</h1>
+      <p class="subtitle">Selecione sua rolagem</p>
+
+      <div class="input-group">
+        <label for="dice-qty">Quantidade (Máx 4)</label>
+        <div class="qty-selector">
+          <button id="qty-minus" class="qty-btn">-</button>
+          <span id="qty-display">2</span>
+          <button id="qty-plus" class="qty-btn">+</button>
+        </div>
+      </div>
+
+      <button id="start-btn" class="primary-btn">Rolar os Dados!</button>
+    </div>
+  </div>
+
+  <!-- Help Modal -->
+  <div id="help-modal" class="modal hidden">
+    <div class="modal-content">
+      <button id="close-help" class="close-btn">&times;</button>
+      <h2>Como Jogar</h2>
+      <ul>
+        <li><strong>Agitar:</strong> Dê uma leve sacudida no celular para jogar os dados pra cima.</li>
+        <li><strong>Inclinar:</strong> Incline o celular como uma bandeja para fazer os dados deslizarem para os lados
+          sob a gravidade.</li>
+        <li><strong>Arraste:</strong> Toque e arraste um dado pela tela para movê-lo manualmente.</li>
+      </ul>
+      <p class="note">Nota: O giroscópio e o acelerômetro exigem sua permissão na próxima tela em alguns dispositivos
+        (como iPhones).</p>
+    </div>
+  </div>
+
+</body>
+
+</html>
