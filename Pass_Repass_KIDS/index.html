@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Quiz Kids Master</title>
+    <style>
+        /* --- PALETA DE CORES LÚDICA & INFANTIL --- */
+        :root {
+            --primary: #ff9800;       /* Laranja animado */
+            --primary-dark: #e65100;  /* Laranja escuro */
+            --secondary: #00bcd4;     /* Azul piscina / heróis */
+            --success: #4caf50;       /* Verde claro */
+            --warning: #ffc107;       /* Amarelo foco */
+            --danger: #ff5722;        /* Vermelho uva */
+            --background: #fff9db;    /* Fundo creme quente/confortável */
+            --surface: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --shadow-sm: 0 2px 4px rgba(0,0,0,0.05);
+            --shadow-md: 0 8px 16px rgba(255, 152, 0, 0.15);
+            --radius: 24px;           /* Bordas bem arredondadas */
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Roboto, sans-serif; }
+
+        body {
+            background-color: var(--background);
+            color: var(--text-main);
+            height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .screen {
+            flex: 1; display: none; flex-direction: column; padding: 24px;
+            animation: fadeIn 0.3s ease-in-out; overflow-y: auto;
+        }
+        .screen.active { display: flex; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- TIPOGRAFIA & CARDS --- */
+        h1 { font-size: 2.2rem; color: var(--primary-dark); text-align: center; margin-bottom: 20px; font-weight: 900; text-shadow: 1px 1px 0px #fff; }
+        h2 { font-size: 1.5rem; margin-bottom: 10px; color: var(--text-main); text-align: center; font-weight: 800; }
+        
+        .card {
+            background: var(--surface); border-radius: var(--radius); padding: 24px;
+            box-shadow: var(--shadow-md); margin-bottom: 20px; text-align: center;
+            border: 3px solid dashed var(--primary);
+        }
+
+        /* --- INPUTS & BOTÕES --- */
+        .input-group { margin-bottom: 20px; text-align: left; }
+        .label { font-size: 1rem; color: var(--text-main); font-weight: 700; margin-bottom: 8px; display: block; }
+        input[type="text"], input[type="number"] {
+            width: 100%; padding: 14px; border: 3px solid #e2e8f0; border-radius: 18px;
+            font-size: 1.3rem; outline: none; transition: border-color 0.2s; text-align: center;
+            font-weight: bold;
+        }
+        input:focus { border-color: var(--secondary); }
+
+        .btn {
+            width: 100%; padding: 18px; border: none; border-radius: 18px;
+            font-size: 1.2rem; font-weight: 800; cursor: pointer;
+            transition: transform 0.1s, opacity 0.2s; display: flex; align-items: center; justify-content: center; gap: 10px;
+            box-shadow: 0 4px 0 rgba(0,0,0,0.1);
+        }
+        .btn:active { transform: scale(0.96); }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-secondary { background: var(--secondary); color: white; }
+        .btn-success { background: var(--success); color: white; }
+        .btn-warning { background: var(--warning); color: white; }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-outline { background: var(--surface); border: 3px solid var(--text-muted); color: var(--text-muted); box-shadow: none; }
+
+        /* --- BUZZER COLO SINALIZADOR (MODO FULL) --- */
+        .buzzer-container { flex: 1; display: flex; justify-content: center; align-items: center; }
+        .buzzer-btn {
+            width: 240px; height: 240px; border-radius: 50%; border: none;
+            background: var(--danger); color: white; font-size: 2.6rem; font-weight: 900;
+            box-shadow: 0 15px 0 #d03b0d, 0 25px 20px rgba(0,0,0,0.2);
+            cursor: pointer; transition: all 0.1s; text-transform: uppercase;
+        }
+        .buzzer-btn:active {
+            transform: translateY(10px); box-shadow: 0 5px 0 #d03b0d, 0 10px 10px rgba(0,0,0,0.2);
+        }
+        .buzzer-btn.disabled {
+            background: #94a3b8; box-shadow: 0 15px 0 #64748b; cursor: not-allowed; opacity: 0.6;
+        }
+
+        /* --- PAINÉIS DE JOGO --- */
+        .score-board {
+            display: flex; justify-content: space-around; background: var(--text-main); color: white;
+            padding: 16px; border-radius: var(--radius); margin-bottom: 20px; font-weight: bold;
+            border: 4px solid var(--secondary);
+        }
+        .score-team { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+        .score-value { font-size: 2.2rem; color: #fcd34d; font-weight: 900; }
+
+        .question-box {
+            background: #fff; border: 4px dashed var(--secondary); border-radius: var(--radius);
+            padding: 24px; margin-bottom: 20px; text-align: center; font-size: 1.5rem; font-weight: bold;
+        }
+
+        .options-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+        @media (min-width: 400px) { .options-grid { grid-template-columns: 1fr 1fr; } }
+    </style>
+    <script src="peerjs.min.js"></script>
+</head>
+<body>
+
+<div class="app-container">
+
+    <section id="screen-home" class="screen active">
+        <button class="btn btn-outline" style="position: absolute; top: 20px; right: 20px; width: 50px; height: 50px; border-radius: 50%; padding: 0; font-size: 1.5rem; display: flex; align-items: center; justify-content: center;" onclick="showScreen('screen-instructions')">
+            ❓
+        </button>
+        <h1 style="margin-top: 40px;">🎈 QUIZ KIDS</h1>
+    
+        <div class="card" style="margin-top: auto; margin-bottom: auto;">
+            <h2>Vamos Jogar!</h2>
+            <p style="color: var(--text-muted); margin-bottom: 30px;">Escolha o modo de jogo ideal para a sua turma.</p>
+            
+            <button class="btn btn-secondary" style="margin-bottom: 15px;" onclick="GameNetwork.startSimplesMode()">
+                🎲 Jogar neste Aparelho (Modo Simples)
+            </button>
+            <button class="btn btn-primary" style="margin-bottom: 15px;" onclick="GameNetwork.initHost()">
+                📺 Criar Sala com Celulares (Modo Full)
+            </button>
+            <button class="btn btn-outline" onclick="showScreen('screen-lobby-player')">
+                📱 Entrar em uma Sala Existente
+            </button>
+        </div>
+    </section>
+
+    <section id="screen-instructions" class="screen">
+        <h1>📖 Como Jogar</h1>
+            
+        <div class="card" style="text-align: left; overflow-y: auto; max-height: 70vh; font-size: 1.05rem;">
+            <h3 style="color: var(--secondary); margin-bottom: 10px;">🎲 Modo Simples (1 Dispositivo)</h3>
+            <p style="margin-bottom: 15px; color: var(--text-muted);">
+                Não precisa de internet nem de outros celulares! O Apresentador lê a pergunta na tela, clica no botão e entrega o celular para as crianças escolherem uma das 4 opções coloridas. Depois, o Apresentador valida de quem foi o ponto!
+            </p>
+
+            <h3 style="color: var(--primary-dark); margin-bottom: 10px;">📺 Modo Full (Vários Celulares)</h3>
+            <p style="color: var(--text-muted);">
+                O Apresentador projeta a sala na TV ou computador. As crianças entram pelo celular usando o código da sala. Quem bater no <strong>BUZZER</strong> gigante primeiro ganha o direito de responder as 4 alternativas direto na sua própria tela!
+            </p>
+        </div>
+
+        <button class="btn btn-primary" style="margin-top: auto;" onclick="showScreen('screen-home')">
+            ⬅️ Voltar para o Início
+        </button>
+    </section>
+
+    <section id="screen-lobby-player" class="screen">
+        <h1>Entrar na Sala</h1>
+        <div class="card">
+            <div class="input-group">
+                <label class="label">Código da Sala</label>
+                <input type="text" id="input-room-code" placeholder="Ex: ABCD" style="text-transform: uppercase;">
+            </div>
+            <div class="input-group">
+                <label class="label">Nome do seu Time</label>
+                <input type="text" id="input-team-name" placeholder="Ex: Os Incríveis">
+            </div>
+            <button class="btn btn-success" onclick="conectarJogador()">CONECTAR JOGADOR</button>
+        </div>
+        <button class="btn btn-outline" onclick="showScreen('screen-home')">Voltar</button>
+    </section>
+
+    <section id="screen-game-player" class="screen">
+        <div style="text-align: center; margin-bottom: 10px;">
+            <span style="font-weight: bold; color: var(--text-muted); font-size: 1.2rem;" id="player-team-name">Time</span>
+        </div>
+
+        <div class="buzzer-container" id="player-buzzer-area">
+            <button class="buzzer-btn disabled" id="btn-buzzer" onclick="GameNetwork.playerHitBuzzer()">BATER!</button>
+        </div>
+
+        <div id="player-actions-area" style="display: none; flex-direction: column; gap: 15px; margin-top: auto;">
+            <div class="options-grid" id="player-options-area" style="display: none;">
+                <button id="btn-opt-0" class="btn btn-outline" style="padding: 22px 10px;" onclick="GameNetwork.sendAnswer(0)"></button>
+                <button id="btn-opt-1" class="btn btn-outline" style="padding: 22px 10px;" onclick="GameNetwork.sendAnswer(1)"></button>
+                <button id="btn-opt-2" class="btn btn-outline" style="padding: 22px 10px;" onclick="GameNetwork.sendAnswer(2)"></button>
+                <button id="btn-opt-3" class="btn btn-outline" style="padding: 22px 10px;" onclick="GameNetwork.sendAnswer(3)"></button>
+            </div>
+        </div>
+    </section>
+
+    <section id="screen-lobby-host" class="screen">
+        <h1>Sala Criada!</h1>
+        <div class="card">
+            <p class="label">Código para os jogadores:</p>
+            <h2 style="font-size: 3.5rem; color: var(--secondary); letter-spacing: 5px;" id="lbl-room-code">XXXX</h2>
+        </div>
+        
+        <div class="card" style="flex: 1;">
+            <h3>Times Conectados:</h3>
+            <ul id="host-teams-list" style="list-style: none; margin-top: 15px; color: var(--text-muted); font-weight: bold;">
+                <li style="padding: 10px; border-bottom: 1px solid #e2e8f0;">⏳ Aguardando Time 1...</li>
+                <li style="padding: 10px;">⏳ Aguardando Time 2...</li>
+            </ul>
+        </div>
+        <div class="input-group">
+            <label class="label" style="text-align: center;">🏆 Quantos pontos para vencer?</label>
+            <input type="number" id="config-target-score" value="30" min="10" step="10">
+        </div>
+        <button id="btn-start-game" class="btn btn-primary disabled" onclick="GameNetwork.startGame()">COMEÇAR JOGO</button>
+    </section>
+
+    <section id="screen-game-host" class="screen">
+        
+        <div class="score-board">
+            <div class="score-team">
+                <span id="host-team1-name">Time 1</span>
+                <span id="host-team1-score" class="score-value">0</span>
+            </div>
+            <div class="score-team">
+                <span id="host-team2-name">Time 2</span>
+                <span id="host-team2-score" class="score-value">0</span>
+            </div>
+        </div>
+
+        <div id="host-view-presenter" style="display: flex; flex-direction: column; flex: 1; gap: 15px;">
+            <div class="question-box" id="presenter-question-box">
+                </div>
+            
+            <div id="presenter-gabarito" style="font-size: 1.2rem; color: var(--success); font-weight: bold; padding: 12px; background: #dcfce7; border-radius: 16px; text-align: center;">
+                🌟 Resposta Correta: <span id="txt-resposta-correta">---</span>
+            </div>
+
+            <div id="host-controls-full" style="display: flex; flex-direction: column; gap: 10px; margin-top: auto;">
+                <button class="btn btn-secondary" onclick="GameNetwork.hostUnlockBuzzer()">Liberar Buzzer nos Celulares</button>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <button class="btn btn-success" onclick="GameNetwork.evaluateAnswer(true)">✔️ Acertou (+10)</button>
+                    <button class="btn btn-danger" onclick="GameNetwork.evaluateAnswer(false)">❌ Errou (-5)</button>
+                </div>
+                <button class="btn btn-outline" style="margin-top: 5px;" onclick="GameNetwork.exibirProximaPergunta()">⏭️ Pular Pergunta</button>
+            </div>
+
+            <button id="btn-liberar-rodada-local" class="btn btn-secondary" style="margin-top: auto; display: none;" onclick="GameNetwork.liberarRodadaLocal()">
+                🚀 Liberar Opções para as Crianças!
+            </button>
+        </div>
+
+        <div id="host-view-kids" style="display: none; flex-direction: column; flex: 1; gap: 15px;">
+            <h2 style="color: var(--secondary); font-size: 1.6rem; margin-bottom: 5px;">👇 Escolham a opção certa:</h2>
+            
+            <div class="options-grid" id="kids-options-grid">
+                <button id="btn-kid-0" class="btn btn-outline" style="padding: 24px 10px; font-size: 1.2rem; font-weight: bold;" onclick="GameNetwork.selecionarOpcaoKids(0)"></button>
+                <button id="btn-kid-1" class="btn btn-outline" style="padding: 24px 10px; font-size: 1.2rem; font-weight: bold;" onclick="GameNetwork.selecionarOpcaoKids(1)"></button>
+                <button id="btn-kid-2" class="btn btn-outline" style="padding: 24px 10px; font-size: 1.2rem; font-weight: bold;" onclick="GameNetwork.selecionarOpcaoKids(2)"></button>
+                <button id="btn-kid-3" class="btn btn-outline" style="padding: 24px 10px; font-size: 1.2rem; font-weight: bold;" onclick="GameNetwork.selecionarOpcaoKids(3)"></button>
+            </div>
+
+            <div id="area-confirmacao-apresentador" style="display: none; margin-top: auto; flex-direction: column; gap: 10px; animation: fadeIn 0.3s;">
+                <p style="text-align: center; font-weight: bold; color: var(--text-muted);">🔒 Opção marcada! Quem pontua?</p>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <button class="btn btn-success" style="background: #00bcd4;" onclick="GameNetwork.confirmarRespostaLocal('Time Azul')">🔵 Azul Pontua</button>
+                    <button class="btn btn-warning" style="background: #ff9800;" onclick="GameNetwork.confirmarRespostaLocal('Time Amarelo')">🟡 Amarelo Pontua</button>
+                </div>
+                <button class="btn btn-danger" style="font-size: 1rem; padding: 10px;" onclick="GameNetwork.confirmarRespostaLocal('Nenhum')">❌ Ninguém Acertou</button>
+            </div>
+        </div>
+    </section>
+
+    <section id="screen-results" class="screen">
+        <h1>🏆 Parabéns aos Campeões!</h1>
+        <div class="card">
+            <h2>Placar Final</h2>
+            <div id="podium-results" style="display: flex; flex-direction: column; gap: 15px; margin: 20px 0; font-size: 1.6rem;">
+            </div>
+        </div>
+        <button class="btn btn-primary" onclick="location.reload()">Jogar Novamente</button>
+    </section>
+
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
