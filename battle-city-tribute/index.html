@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Battle City Remake - Homenagem Web</title>
+    <link rel="stylesheet" href="./css/styles.css">
+    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+</head>
+<body>
+
+    <div id="game-container">
+        <div id="menu-screen" class="screen">
+            <h1>BATTLE CITY<br><span style="font-size: 1rem; color: #aaa;">TRIBUTE WEB</span></h1>
+            <ul class="menu-options">
+                <li id="opt-single">1 JOGADOR</li>
+                <li id="opt-coop">MULTIPLAYER CO-OP</li>
+                <li id="opt-vs">MULTIPLAYER VS</li>
+                <li id="opt-editor">CONSTRUÇÃO (EDITOR)</li>
+                <li id="opt-config">CONFIGURAÇÕES</li>
+            </ul>
+        </div>
+
+        <div id="config-screen" class="screen hidden">
+            <h1>CONFIGURAÇÕES</h1>
+            
+            <div class="config-row">
+                <span>Efeitos Sonoros:</span>
+                <button class="btn-nav" id="btn-sound">LIGADO</button>
+            </div>
+
+            <div class="config-row">
+                <span>Textura Visual:</span>
+                <button class="btn-nav" id="btn-texture">ANTIGO (RETRÔ)</button>
+            </div>
+
+            <div class="config-row">
+                <span>Dificuldade:</span>
+                <button class="btn-nav" id="btn-difficulty">PADRÃO</button>
+            </div>
+
+            <button class="btn-nav" id="btn-back-menu">VOLTAR AO MENU</button>
+        </div>
+
+        <canvas id="gameCanvas" width="512" height="448"></canvas>
+    </div>
+
+    <script type="module" src="./js/main.js"></script>
+</body>
+</html>

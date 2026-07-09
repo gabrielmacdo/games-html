@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Battle City - Editor de Mapas Profissional</title>
+    <style>
+        body {
+            background-color: #121212;
+            color: #e0e0e0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            margin: 0;
+        }
+        h1 { margin-bottom: 5px; font-size: 26px; font-weight: 600; letter-spacing: 1px; }
+        p { color: #888; margin-bottom: 25px; font-size: 14px; }
+        
+        .editor-container {
+            display: flex;
+            gap: 25px;
+            background: #1e1e1e;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+            box-sizing: border-box;
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            background: #252526;
+            padding: 15px;
+            border-radius: 8px;
+            width: 300px;
+            min-width: 300px;
+            box-sizing: border-box;
+        }
+
+        .palette-title {
+            font-weight: bold;
+            font-size: 12px;
+            text-transform: uppercase;
+            color: #ff4444;
+            border-bottom: 1px solid #3c3c3c;
+            padding-bottom: 6px;
+            letter-spacing: 0.5px;
+            margin-bottom: 5px;
+        }
+
+        .group-label {
+            font-size: 11px;
+            font-weight: bold;
+            margin-top: 5px;
+            margin-bottom: 5px;
+            letter-spacing: 0.5px;
+        }
+
+        .selector-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 6px;
+            margin-bottom: 10px;
+        }
+
+        .btn-item {
+            background: #2d2d2d;
+            border: 1px solid #3c3c3c;
+            color: #ccc;
+            padding: 8px;
+            text-align: center;
+            cursor: pointer;
+            font-size: 11px;
+            border-radius: 4px;
+            user-select: none;
+            transition: all 0.2s ease;
+        }
+
+        .btn-item:hover {
+            background: #3c3c3c;
+            color: #fff;
+        }
+
+        .btn-item.selected {
+            border-color: #ff4444;
+            background: #442222;
+            color: #ffaaaa;
+            font-weight: bold;
+            box-shadow: 0 0 8px rgba(255, 68, 68, 0.3);
+        }
+
+        .full-width {
+            grid-column: span 2;
+        }
+
+        /* --- SISTEMA DE ABAS FIXO E PROPORCIONAL --- */
+        .workspace-container {
+            display: flex;
+            flex-direction: column;
+            width: 512px; /* Garante que a área de trabalho tenha exatamente a largura do Canvas */
+        }
+
+        .tab-headers {
+            display: flex;
+            background: #252526;
+            border-radius: 6px 6px 0 0;
+            padding: 4px 4px 0 4px;
+            gap: 4px;
+        }
+
+        .tab-btn {
+            background: #2d2d2d;
+            border: 1px solid #3c3c3c;
+            border-bottom: none;
+            color: #aaa;
+            padding: 8px 16px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 4px 4px 0 0;
+            transition: all 0.2s;
+        }
+
+        .tab-btn:hover {
+            background: #333;
+            color: #fff;
+        }
+
+        .tab-btn.active {
+            background: #1e1e1e;
+            color: #ff4444;
+            border-color: #3c3c3c;
+            padding-bottom: 9px;
+            margin-bottom: -1px;
+            z-index: 2;
+        }
+
+        .tab-content {
+            background: #000;
+            border: 4px solid #2d2d2d;
+            border-top: none;
+            border-radius: 0 0 4px 4px;
+            width: 512px;
+            height: 448px;
+            box-sizing: border-box;
+            position: relative;
+            overflow: hidden;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            cursor: crosshair;
+        }
+
+        textarea {
+            width: 100%;
+            height: 100%;
+            background-color: #151515;
+            color: #85e485;
+            font-family: 'Consolas', 'Courier New', monospace;
+            border: none;
+            padding: 15px;
+            resize: none;
+            box-sizing: border-box;
+            font-size: 11px;
+            line-height: 1.4;
+            display: none; /* Escondido por padrão */
+        }
+
+        textarea.active {
+            display: block;
+        }
+
+        #clearBtn {
+            padding: 10px;
+            background: #d93838;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 12px;
+            margin-top: 20px;
+            transition: background 0.2s;
+        }
+
+        #clearBtn:hover {
+            background: #ff4444;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>🛠️ Editor de Mapas Avançado - Battle City</h1>
+    <p>Selecione os blocos à esquerda, pinte no Canvas e alterne para a aba de Código para copiar a matriz.</p>
+    
+    <div class="editor-container">
+        <div class="sidebar">
+            <div class="palette-title">1. Seção de Blocos</div>
+            <div class="selector-grid" id="materialPalette">
+                <div class="btn-item selected full-width" data-material="0">❌ Borracha / Vazio</div>
+                <div class="btn-item" data-material="1">🧱 Tijolo</div>
+                <div class="btn-item" data-material="2">🛡️ Metal (Aço)</div>
+                <div class="btn-item" data-material="3">🌊 Água</div>
+                <div class="btn-item" data-material="4">🌳 Árvore / Arbusto</div>
+                <div class="btn-item full-width" data-material="5" style="color: #ffaa00;">🦅 Águia Base (32x32)</div>
+            </div>
+            
+            <div id="tamanhoSection">
+                <div class="palette-title">2. Tamanhos e Posições</div>
+                <div class="group-label" style="color: #ffaa00;">CORTES GERAIS</div>
+                <div class="selector-grid" id="sizePalette">
+                    <div class="btn-item selected full-width" data-modifier="0">⏹️ Bloco Inteiro</div>
+                    <div class="btn-item" data-modifier="1">🔼 Metade Sup</div>
+                    <div class="btn-item" data-modifier="2">🔽 Metade Inf</div>
+                    <div class="btn-item" data-modifier="3">◀️ Metade Esq</div>
+                    <div class="btn-item" data-modifier="4">▶️ Metade Dir</div>
+                    
+                    <div class="group-label full-width" style="color: #ff55ff; margin-top: 5px;">CANTOS (25%)</div>
+                    <div class="btn-item" data-modifier="5">📐 Canto S.E</div>
+                    <div class="btn-item" data-modifier="6">📐 Canto S.D</div>
+                    <div class="btn-item" data-modifier="7">📐 Canto I.E</div>
+                    <div class="btn-item" data-modifier="8">📐 Canto I.D</div>
+                </div>
+            </div>
+            
+            <button id="clearBtn">Limpar Tudo</button>
+        </div>
+
+        <div class="workspace-container">
+            <div class="tab-headers">
+                <button class="tab-btn active" id="btnTabCanvas">🎨 Mapa (Canvas)</button>
+                <button class="tab-btn" id="btnTabCode">💻 Código da Matriz</button>
+            </div>
+            <div class="tab-content">
+                <canvas id="editorCanvas" width="512" height="448"></canvas>
+                <textarea id="codeOutput" readonly></textarea>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { TILE_TYPES } from './js/stage/map.js';
+
+        const canvas = document.getElementById('editorCanvas');
+        const ctx = canvas.getContext('2d');
+        const codeOutput = document.getElementById('codeOutput');
+        const materialPalette = document.getElementById('materialPalette');
+        const sizePalette = document.getElementById('sizePalette');
+        const tamanhoSection = document.getElementById('tamanhoSection');
+        const clearBtn = document.getElementById('clearBtn');
+
+        // Seletores de Abas
+        const btnTabCanvas = document.getElementById('btnTabCanvas');
+        const btnTabCode = document.getElementById('btnTabCode');
+
+        const TILE_SIZE = 16;
+        const COLS = 32;
+        const ROWS = 28;
+
+        let mapMatrix = Array(ROWS).fill().map(() => Array(COLS).fill(0));
+        let currentMaterial = 0;
+        let currentModifier = 0;
+        let isDrawing = false;
+
+        const spritesheet = new Image();
+        spritesheet.src = "./assets/sprites/general-sprites.png";
+        spritesheet.onload = () => { updateEditor(); };
+
+        // --- LÓGICA DE ALTERNÂNCIA DE ABAS ---
+        btnTabCanvas.addEventListener('click', () => {
+            btnTabCode.classList.remove('active');
+            codeOutput.classList.remove('active');
+            btnTabCanvas.classList.add('active');
+            canvas.style.display = 'block';
+            updateEditor();
+        });
+
+        btnTabCode.addEventListener('click', () => {
+            btnTabCanvas.classList.remove('active');
+            canvas.style.display = 'none';
+            btnTabCode.classList.add('active');
+            codeOutput.classList.add('active');
+            generateCodeOutput(); // Atualiza o texto na hora de olhar
+        });
+
+        // Seleção de Material
+        materialPalette.addEventListener('click', (e) => {
+            const item = e.target.closest('[data-material]');
+            if (!item) return;
+            document.querySelectorAll('[data-material]').forEach(i => i.classList.remove('selected'));
+            item.classList.add('selected');
+            currentMaterial = parseInt(item.dataset.material);
+
+            if (currentMaterial === 0 || currentMaterial === 5) {
+                tamanhoSection.style.display = 'none';
+            } else {
+                tamanhoSection.style.display = 'block';
+            }
+            updateEditor();
+        });
+
+        // Seleção de Tamanho
+        sizePalette.addEventListener('click', (e) => {
+            const item = e.target.closest('[data-modifier]');
+            if (!item) return;
+            document.querySelectorAll('[data-modifier]').forEach(i => i.classList.remove('selected'));
+            item.classList.add('selected');
+            currentModifier = parseInt(item.dataset.modifier);
+            updateEditor();
+        });
+
+        canvas.addEventListener('mousedown', (e) => { isDrawing = true; paintTile(e); });
+        canvas.addEventListener('mousemove', (e) => { if (isDrawing) paintTile(e); });
+        window.addEventListener('mouseup', () => { isDrawing = false; });
+        clearBtn.addEventListener('click', () => {
+            mapMatrix = Array(ROWS).fill().map(() => Array(COLS).fill(0));
+            updateEditor();
+        });
+
+        function paintTile(e) {
+            const rect = canvas.getBoundingClientRect();
+            const canvasX = (e.clientX - rect.left) * (canvas.width / rect.width);
+            const canvasY = (e.clientY - rect.top) * (canvas.height / rect.height);
+
+            const col = Math.floor(canvasX / TILE_SIZE);
+            const row = Math.floor(canvasY / TILE_SIZE);
+
+            if (col >= 0 && col < COLS && row >= 0 && row < ROWS) {
+                if (currentMaterial === 0) {
+                    mapMatrix[row][col] = 0;
+                } else if (currentMaterial === 5) {
+                    if (col + 1 < COLS && row + 1 < ROWS) {
+                        mapMatrix[row][col]     = 5; 
+                        mapMatrix[row][col+1]   = 5; 
+                        mapMatrix[row+1][col]   = 5; 
+                        mapMatrix[row+1][col+1] = 5; 
+                    }
+                } else {
+                    if (currentModifier === 0) {
+                        mapMatrix[row][col] = currentMaterial;
+                    } else {
+                        mapMatrix[row][col] = (currentMaterial * 10) + currentModifier;
+                    }
+                }
+                updateEditor();
+            }
+        }
+
+        function updateEditor() {
+            renderMap();
+            generateCodeOutput();
+        }
+
+        function renderMap() {
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Grade Guia
+            ctx.strokeStyle = '#262626';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= COLS; i++) {
+                ctx.beginPath(); ctx.moveTo(i * TILE_SIZE, 0); ctx.lineTo(i * TILE_SIZE, canvas.height); ctx.stroke();
+            }
+            for (let j = 0; j <= ROWS; j++) {
+                ctx.beginPath(); ctx.moveTo(0, j * TILE_SIZE); ctx.lineTo(canvas.width, j * TILE_SIZE); ctx.stroke();
+            }
+
+            // Camada de Fundo
+            for (let row = 0; row < ROWS; row++) {
+                for (let col = 0; col < COLS; col++) {
+                    let id = mapMatrix[row][col];
+                    let posX = col * TILE_SIZE;
+                    let posY = row * TILE_SIZE;
+
+                    if (id === 0) continue;
+
+                    let mat = id < 10 ? id : Math.floor(id / 10);
+                    let mod = id < 10 ? 0  : id % 10;
+
+                    if (mat === 4) continue; 
+
+                    if (mat === 5) {
+                        let isLeft = (col > 0 && mapMatrix[row][col-1] === 5);
+                        let isTop = (row > 0 && mapMatrix[row-1][col] === 5);
+                        if (!isLeft && !isTop) {
+                            ctx.drawImage(spritesheet, 304, 32, 32, 32, posX, posY, 32, 32);
+                        }
+                    } else {
+                        let mask = [true, true, true, true];
+                        if (mod === 1) mask = [true, true, false, false];
+                        else if (mod === 2) mask = [false, false, true, true];
+                        else if (mod === 3) mask = [true, false, true, false];
+                        else if (mod === 4) mask = [false, true, false, true];
+                        else if (mod === 5) mask = [true, false, false, false];
+                        else if (mod === 6) mask = [false, true, false, false];
+                        else if (mod === 7) mask = [false, false, true, false];
+                        else if (mod === 8) mask = [false, false, false, true];
+
+                        drawCustomBlock(posX, posY, mat, mask);
+                    }
+                }
+            }
+
+            // Camada de Primeiro Plano (Árvores)
+            for (let row = 0; row < ROWS; row++) {
+                for (let col = 0; col < COLS; col++) {
+                    let id = mapMatrix[row][col];
+                    let mat = id < 10 ? id : Math.floor(id / 10);
+                    let mod = id < 10 ? 0  : id % 10;
+
+                    if (mat === 4) {
+                        let posX = col * TILE_SIZE;
+                        let posY = row * TILE_SIZE;
+                        let mask = [true, true, true, true];
+                        if (mod === 1) mask = [true, true, false, false];
+                        else if (mod === 2) mask = [false, false, true, true];
+                        else if (mod === 3) mask = [true, false, true, false];
+                        else if (mod === 4) mask = [false, true, false, true];
+                        else if (mod === 5) mask = [true, false, false, false];
+                        else if (mod === 6) mask = [false, true, false, false];
+                        else if (mod === 7) mask = [false, false, true, false];
+                        else if (mod === 8) mask = [false, false, false, true];
+
+                        drawCustomBlock(posX, posY, 4, mask);
+                    }
+                }
+            }
+        }
+
+        function drawCustomBlock(x, y, material, parts) {
+            let srcX = TILE_TYPES.BRICK.sprite.x;
+            let srcY = TILE_TYPES.BRICK.sprite.y;
+
+            if (material === 2) { srcX = TILE_TYPES.STEEL.sprite.x; srcY = TILE_TYPES.STEEL.sprite.y; }
+            else if (material === 3) { srcX = 256; srcY = 32; } 
+            else if (material === 4) { srcX = 272; srcY = 32; } 
+
+            const offsets = [
+                { x: 0, y: 0 }, { x: 8, y: 0 },
+                { x: 0, y: 8 }, { x: 8, y: 8 }
+            ];
+
+            for (let i = 0; i < 4; i++) {
+                if (parts[i]) {
+                    ctx.drawImage(spritesheet, srcX, srcY, 8, 8, x + offsets[i].x, y + offsets[i].y, 8, 8);
+                }
+            }
+        }
+
+        function generateCodeOutput() {
+            let code = "export const STAGE_BRANCO = [\n";
+            for (let row = 0; row < ROWS; row++) {
+                let rowString = mapMatrix[row].map(val => String(val).padStart(2, ' ')).join(', ');
+                code += `    [${rowString}]${row < ROWS - 1 ? ',' : ''} // Linha ${row}\n`;
+            }
+            code += "];";
+            codeOutput.value = code;
+        }
+    </script>
+</body>
+</html>

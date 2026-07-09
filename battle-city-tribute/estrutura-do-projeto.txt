@@ -1,0 +1,35 @@
+battle-city-tribute/
+│
+├── index.html              # Ponto de entrada (HTML estrutural e telas de menu)
+│
+├── css/
+│   └── styles.css          # Toda a estilização dos menus e posicionamento do Canvas
+│
+├── assets/
+│   ├── sprites/
+│   │   └── general-sprites.png   # A spritesheet original que você enviou
+│   └── audio/
+│       ├── shoot.mp3       # (Futuro) Efeitos sonoros
+│       └── explosion.mp3
+│
+└── js/
+    ├── main.js             # Inicializa o jogo e gerencia o Game Loop principal
+    ├── config.js           # Estado global de configurações (áudio, texturas, dificuldade)
+    ├── menu.js             # Controle de cliques e transições de telas (HTML UI)
+    │
+    ├── engine/
+    │   ├── canvas.js       # Inicialização e configurações do contexto do Canvas
+    │   ├── input.js        # Captura e gerenciamento dos comandos do teclado
+    │   └── spriteMap.js    # Mapeamento de coordenadas (X,Y) da spritesheet
+    │
+    ├── entities/
+    │   ├── player.js       # Classe/Objeto do Tanque do Jogador
+    │   ├── enemy.js        # (Futuro) Lógica e IA dos tanques inimigos
+    │   └── bullet.js       # (Futuro) Lógica dos projéteis disparados
+    │
+    ├── stage/
+    │   ├── map.js          # Gerenciamento da matriz do mapa (tijolos, aço, água)
+    │   └── editor.js       # (Futuro) Lógica do Modo Construção (import/export JSON)
+    │
+    └── network/
+        └── peerManager.js  # (Futuro) Gerenciamento da conexão P2P com PeerJS
