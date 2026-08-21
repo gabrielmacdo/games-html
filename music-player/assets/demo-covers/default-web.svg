@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="500" height="500">
+  <defs>
+    <linearGradient id="cloudBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#083344" />
+      <stop offset="50%" stop-color="#0e7490" />
+      <stop offset="100%" stop-color="#0284c7" />
+    </linearGradient>
+    <linearGradient id="streamGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="100%" stop-color="#22d3ee" />
+    </linearGradient>
+  </defs>
+  <rect width="500" height="500" fill="url(#cloudBg)" />
+  
+  <!-- Cloud & Soundwaves Graphic -->
+  <g transform="translate(100, 110)">
+    <path d="M75,170 C33.5,170 0,136.5 0,95 C0,56.5 28.5,25 65.5,21 C79.5,8 98.5,0 120,0 C154.5,0 183.5,21 195,51 C203.5,47.5 212.5,45.5 222,45.5 C263.5,45.5 297,79 297,120.5 C297,162 263.5,195.5 222,195.5 L75,195.5 Z" fill="rgba(255,255,255,0.12)" stroke="url(#streamGrad)" stroke-width="6" />
+    
+    <!-- Sound Waves inside cloud -->
+    <rect x="80" y="90" width="8" height="40" rx="4" fill="#38bdf8" />
+    <rect x="105" y="70" width="8" height="75" rx="4" fill="#22d3ee" />
+    <rect x="130" y="55" width="8" height="105" rx="4" fill="#a5f3fc" />
+    <rect x="155" y="65" width="8" height="85" rx="4" fill="#22d3ee" />
+    <rect x="180" y="80" width="8" height="55" rx="4" fill="#38bdf8" />
+    <rect x="205" y="95" width="8" height="30" rx="4" fill="#38bdf8" />
+  </g>
+
+  <text x="250" y="440" text-anchor="middle" fill="#ffffff" font-family="'Outfit', sans-serif" font-weight="700" font-size="24" letter-spacing="3">CLOUD AUDIO STREAM</text>
+</svg>

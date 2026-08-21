@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="500" height="500">
+  <defs>
+    <linearGradient id="auroraBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#022c22" />
+      <stop offset="50%" stop-color="#064e3b" />
+      <stop offset="100%" stop-color="#0f172a" />
+    </linearGradient>
+    <radialGradient id="auroraGlow" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#34d399" stop-opacity="0.8" />
+      <stop offset="50%" stop-color="#059669" stop-opacity="0.4" />
+      <stop offset="100%" stop-color="transparent" stop-opacity="0" />
+    </radialGradient>
+  </defs>
+  <rect width="500" height="500" fill="url(#auroraBg)" />
+  <circle cx="250" cy="200" r="180" fill="url(#auroraGlow)" />
+  
+  <!-- Cosmic Ambient Waves -->
+  <path d="M 50 320 C 150 180, 350 400, 450 250" fill="none" stroke="#6ee7b7" stroke-width="4" opacity="0.6" />
+  <path d="M 50 260 C 180 380, 320 160, 450 300" fill="none" stroke="#38bdf8" stroke-width="3" opacity="0.5" />
+  
+  <!-- Star dots -->
+  <circle cx="120" cy="100" r="3" fill="#ffffff" opacity="0.8" />
+  <circle cx="380" cy="120" r="2.5" fill="#ffffff" opacity="0.9" />
+  <circle cx="280" cy="70" r="4" fill="#6ee7b7" opacity="0.7" />
+  <circle cx="190" cy="140" r="2" fill="#ffffff" opacity="0.6" />
+  <circle cx="340" cy="180" r="3" fill="#38bdf8" opacity="0.7" />
+
+  <text x="250" y="450" text-anchor="middle" fill="#f8fafc" font-family="'Outfit', sans-serif" font-weight="800" font-size="24" letter-spacing="4">CHILL SYNTH &amp; LOFI</text>
+</svg>

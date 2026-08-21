@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="500" height="500">
+  <defs>
+    <linearGradient id="localBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#064e3b" />
+      <stop offset="50%" stop-color="#047857" />
+      <stop offset="100%" stop-color="#065f46" />
+    </linearGradient>
+    <linearGradient id="folderGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#34d399" />
+      <stop offset="100%" stop-color="#10b981" />
+    </linearGradient>
+  </defs>
+  <rect width="500" height="500" fill="url(#localBg)" />
+  
+  <!-- Vinyl / Folder Music Icon -->
+  <g transform="translate(125, 110)">
+    <!-- Vinyl Disc behind -->
+    <circle cx="125" cy="80" r="100" fill="#111827" stroke="rgba(255,255,255,0.15)" stroke-width="3" />
+    <circle cx="125" cy="80" r="70" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="2" />
+    <circle cx="125" cy="80" r="40" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="2" />
+    <circle cx="125" cy="80" r="24" fill="#10b981" />
+
+    <!-- Music Folder in front -->
+    <path d="M20,70 L90,70 L115,95 L230,95 C241,95 250,104 250,115 L250,220 C250,231 241,240 230,240 L20,240 C9,240 0,231 0,220 L0,90 C0,79 9,70 20,70 Z" fill="url(#folderGrad)" opacity="0.95" filter="drop-shadow(0 10px 20px rgba(0,0,0,0.5))" />
+    
+    <!-- Music Note Icon inside folder -->
+    <path d="M110,135 L155,125 L155,175 C151,173 145,172 140,172 C129,172 120,179 120,188 C120,197 129,204 140,204 C151,204 160,197 160,188 L160,145 L115,155 L115,185 C111,183 105,182 100,182 C89,182 80,189 80,198 C80,207 89,214 100,214 C111,214 120,207 120,198 L120,135 Z" fill="#ffffff" />
+  </g>
+
+  <text x="250" y="440" text-anchor="middle" fill="#ffffff" font-family="'Outfit', sans-serif" font-weight="700" font-size="24" letter-spacing="3">LOCAL AUDIO FILE</text>
+</svg>
