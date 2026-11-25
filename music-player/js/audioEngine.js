@@ -11,7 +11,7 @@ class AudioEngineAdapter {
   constructor() {
     this.htmlAudio = new Audio();
     this.htmlAudio.preload = 'auto';
-    this.htmlAudio.crossOrigin = 'anonymous';
+    //this.htmlAudio.crossOrigin = 'anonymous';
 
     this.ytPlayer = null;
     this.isYouTubeReady = false;
@@ -382,7 +382,17 @@ class AudioEngineAdapter {
    */
   loadHtml5Track(src, autoPlay) {
     State.setBufferPercent(0);
-    this.setupWebAudio();
+    const isLocalOrSameOrigin = src.startsWith('blob:') || src.startsWith('./') || src.startsWith(window.location.origin);
+
+    if (isLocalOrSameOrigin) {
+      this.htmlAudio.crossOrigin = 'anonymous';
+      this.setupWebAudio();
+    } else {
+      // Remove o atributo crossOrigin para permitir streaming de qualquer CDN/servidor sem CORS
+      this.htmlAudio.removeAttribute('crossOrigin');
+      this.htmlAudio.crossOrigin = null;
+    }
+    //this.setupWebAudio();
     this.htmlAudio.src = src || '';
     this.htmlAudio.load();
     this.setVolume(State.volume);
