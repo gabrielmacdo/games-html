@@ -32,7 +32,7 @@ const GAME_STATE = {
 };
 
 /**
- * Aplicação Principal — Egg-Man 3D (Fase 5.5 Completa)
+ * Aplicação Principal — Egg-Man 3D (Fase 5.5 Completa + Mobile Fullscreen/100dvh)
  */
 class GameApp {
   constructor() {
@@ -66,7 +66,8 @@ class GameApp {
     this.finalHighScoreEl = document.getElementById('final-highscore-val');
     this.restartGameBtn = document.getElementById('restart-game-btn');
 
-    // Modal de Configurações e Customização (Botão Engrenagem ⚙️)
+    // Botões de Tela Cheia (⛶), Engrenagem (⚙️) e Modal de Configurações
+    this.fullscreenBtn = document.getElementById('fullscreen-btn');
     this.settingsBtn = document.getElementById('settings-btn');
     this.settingsModalEl = document.getElementById('settings-modal');
     this.closeSettingsBtn = document.getElementById('close-settings-btn');
@@ -128,18 +129,104 @@ class GameApp {
     this._renderLivesHUD();
     this._updateHUD();
 
-    window.addEventListener('resize', () => {
+    // Monitora redimensionamento tanto da janela quanto do visualViewport (retração/expansão da barra mobile)
+    const handleViewportChange = () => {
       this._onWindowResize();
       this._checkPortraitOrientationBlock();
-    });
+    };
+
+    window.addEventListener('resize', handleViewportChange);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', handleViewportChange);
+      window.visualViewport.addEventListener('scroll', handleViewportChange);
+    }
 
     this._animate();
+  }
+
+  /**
+   * Retorna as dimensões reais da área visível atual (descontando barras dinâmicas do navegador mobile).
+   */
+  _getViewportDimensions() {
+    if (this.container && this.container.clientWidth > 0 && this.container.clientHeight > 0) {
+      return {
+        width: this.container.clientWidth,
+        height: this.container.clientHeight
+      };
+    }
+    if (window.visualViewport) {
+      return {
+        width: Math.round(window.visualViewport.width),
+        height: Math.round(window.visualViewport.height)
+      };
+    }
+    return {
+      width: window.innerWidth,
+      height: window.innerHeight
+    };
+  }
+
+  /**
+   * Solicita entrada em Tela Cheia (Fullscreen API) com fallback seguro para Safari iOS
+   * e recolhe a barra de endereços superior via window.scrollTo(0, 1).
+   */
+  _tryEnterMobileFullscreen() {
+    try {
+      window.scrollTo(0, 1);
+    } catch (_) {}
+
+    if (!isTouchDevice()) return;
+
+    const docEl = document.documentElement;
+    const isFull =
+      document.fullscreenElement || document.webkitFullscreenElement;
+    if (isFull) return;
+
+    if (docEl.requestFullscreen) {
+      docEl.requestFullscreen().catch(() => {});
+    } else if (docEl.webkitRequestFullscreen) {
+      try {
+        docEl.webkitRequestFullscreen();
+      } catch (_) {}
+    }
+  }
+
+  /**
+   * Alterna manualmente o modo Tela Cheia ao clicar no botão ⛶ no topo direito.
+   */
+  _toggleFullscreenManual() {
+    try {
+      window.scrollTo(0, 1);
+    } catch (_) {}
+
+    const docEl = document.documentElement;
+    const isFull =
+      document.fullscreenElement || document.webkitFullscreenElement;
+
+    if (!isFull) {
+      if (docEl.requestFullscreen) {
+        docEl.requestFullscreen().catch(() => {});
+      } else if (docEl.webkitRequestFullscreen) {
+        try {
+          docEl.webkitRequestFullscreen();
+        } catch (_) {}
+      }
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen().catch(() => {});
+      } else if (document.webkitExitFullscreen) {
+        try {
+          document.webkitExitFullscreen();
+        } catch (_) {}
+      }
+    }
   }
 
   _initUIControls() {
     if (this.startBtn) {
       this.startBtn.addEventListener('click', () => {
         this.startBtn.blur();
+        this._tryEnterMobileFullscreen();
         this._startNewGame();
       });
     }
@@ -147,6 +234,7 @@ class GameApp {
     if (this.nextStageBtn) {
       this.nextStageBtn.addEventListener('click', () => {
         this.nextStageBtn.blur();
+        this._tryEnterMobileFullscreen();
         this._advanceToNextStage();
       });
     }
@@ -154,7 +242,15 @@ class GameApp {
     if (this.restartGameBtn) {
       this.restartGameBtn.addEventListener('click', () => {
         this.restartGameBtn.blur();
+        this._tryEnterMobileFullscreen();
         this._startNewGame();
+      });
+    }
+
+    if (this.fullscreenBtn) {
+      this.fullscreenBtn.addEventListener('click', () => {
+        this.fullscreenBtn.blur();
+        this._toggleFullscreenManual();
       });
     }
 
@@ -254,7 +350,6 @@ class GameApp {
    * Inicializa o ajuste de Zoom da Câmera via Roda do Mouse (wheel) e Pinça com 2 dedos (pinch-to-zoom).
    */
   _initZoomListeners() {
-    // Roda do mouse no Desktop (rolar para baixo afasta até 1.8x; rolar para cima aproxima até 1.0x)
     window.addEventListener(
       'wheel',
       (e) => {
@@ -268,7 +363,6 @@ class GameApp {
       { passive: true }
     );
 
-    // Gesto de Pinça com dois dedos (Pinch-to-Zoom) no celular
     window.addEventListener(
       'touchstart',
       (e) => {
@@ -296,7 +390,6 @@ class GameApp {
           const currentDist = Math.hypot(dx, dy);
 
           if (currentDist > 10) {
-            // Fechar os dois dedos (currentDist < pinchStartDistance) aumenta o multiplicador de afastamento (zoom out)
             const ratio = this.pinchStartDistance / currentDist;
             setCameraZoom(this.pinchStartZoom * ratio);
             this._syncZoomUI();
@@ -327,7 +420,10 @@ class GameApp {
       }
     }
     window.addEventListener('orientationchange', () => {
-      setTimeout(() => this._checkPortraitOrientationBlock(), 80);
+      setTimeout(() => {
+        this._onWindowResize();
+        this._checkPortraitOrientationBlock();
+      }, 100);
     });
   }
 
@@ -338,15 +434,12 @@ class GameApp {
         '(pointer: coarse) and (orientation: portrait)'
       ).matches;
     } else if (isTouchDevice()) {
-      blocked = window.innerHeight > window.innerWidth;
+      const { width, height } = this._getViewportDimensions();
+      blocked = height > width;
     }
     this.isPortraitBlocked = blocked;
   }
 
-  /**
-   * Exibe o D-Pad Virtual apenas quando o modo mobile é 'DPAD' e o usuário está em dispositivo touch
-   * (ou se ativou manualmente nas configurações do desktop para testar).
-   */
   _updateDpadVisibility() {
     if (!this.virtualDpadEl) return;
     const shouldShow =
@@ -530,8 +623,9 @@ class GameApp {
   }
 
   _initRenderer() {
+    const { width, height } = this._getViewportDimensions();
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
-    this.renderer.setSize(window.innerWidth, window.innerHeight);
+    this.renderer.setSize(width, height);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
     this.renderer.shadowMap.enabled = true;
@@ -541,7 +635,8 @@ class GameApp {
   }
 
   _initCamera() {
-    const aspect = window.innerWidth / window.innerHeight;
+    const { width, height } = this._getViewportDimensions();
+    const aspect = width / Math.max(1, height);
     this.camera = new THREE.PerspectiveCamera(
       CONFIG.CAMERA_FOV,
       aspect,
@@ -708,9 +803,12 @@ class GameApp {
   }
 
   _onWindowResize() {
-    this.camera.aspect = window.innerWidth / window.innerHeight;
+    const { width, height } = this._getViewportDimensions();
+    if (width <= 0 || height <= 0) return;
+
+    this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
-    this.renderer.setSize(window.innerWidth, window.innerHeight);
+    this.renderer.setSize(width, height);
   }
 
   _animate() {
@@ -720,8 +818,6 @@ class GameApp {
 
     this.maze.update(dt);
 
-    // Pausa automaticamente a lógica da partida se o modal de configurações estiver aberto
-    // OU se o dispositivo mobile estiver em modo retrato (#rotate-device-overlay visível)
     const isPaused = this.isSettingsOpen || this.isPortraitBlocked;
 
     if (!isPaused && this.gameState === GAME_STATE.PLAYING) {
