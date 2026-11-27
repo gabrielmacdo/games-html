@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Egg-Man 3D — Arcade WebGL</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cellipse cx='32' cy='34' rx='22' ry='27' fill='%23ffd54f' stroke='%23d97706' stroke-width='4'/%3E%3Ccircle cx='25' cy='30' r='3' fill='%231e293b'/%3E%3Ccircle cx='39' cy='30' r='3' fill='%231e293b'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="./css/style.css" />
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"
+      }
+    }
+  </script>
+</head>
+<body>
+  <!-- Sobreposição Obrigatória de Modo Paisagem (Landscape) para Dispositivos Touch em Retrato -->
+  <div id="rotate-device-overlay" aria-live="polite">
+    <div class="rotate-card">
+      <div class="rotate-phone-icon">📱↻</div>
+      <h2>GIRE O CELULAR</h2>
+      <p>
+        Para ter a visão ideal do labirinto 3D, coloque seu aparelho na
+        <strong>posição horizontal (Modo Paisagem)</strong>.
+      </p>
+      <span class="rotate-sub">O jogo continuará automaticamente ao girar.</span>
+    </div>
+  </div>
+
+  <!-- HUD Comercial Limpo -->
+  <div id="hud">
+    <div class="hud-top">
+      <div class="hud-box">
+        <span class="hud-label">SCORE</span>
+        <span id="score-val" class="hud-value">0000</span>
+      </div>
+
+      <div class="hud-box hud-center-box">
+        <div class="hud-center-header">
+          <span id="stage-val" class="hud-label">STAGE 1</span>
+          <span class="hud-sep">•</span>
+          <span id="remaining-val" class="hud-subvalue">ITENS: 0 / 0</span>
+        </div>
+
+        <!-- Vidas representadas como pequenos ícones de ovo -->
+        <div class="lives-row">
+          <span class="lives-label">VIDAS</span>
+          <div id="lives-container" class="lives-container"></div>
+        </div>
+
+        <!-- Indicador regressivo de Superpoder (Moeda de Ovo) -->
+        <div id="power-badge" class="power-badge hidden">
+          <div class="power-header">
+            <span>SUPERPODER ATIVO</span>
+            <span id="power-timer-val">8.0s</span>
+          </div>
+          <div class="power-bar-track">
+            <div id="power-bar-fill" class="power-bar-fill"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="hud-right-group">
+        <div class="hud-box">
+          <span class="hud-label">HIGH SCORE</span>
+          <span id="highscore-val" class="hud-value">0000</span>
+        </div>
+        <button
+          id="settings-btn"
+          class="gear-btn"
+          type="button"
+          title="Configurações e Customização (Esc)"
+          aria-label="Configurações"
+        >
+          ⚙️
+        </button>
+      </div>
+    </div>
+
+    <!-- Aviso Temporário de Início de Rodada ("PRONTO!") -->
+    <div id="ready-toast" class="ready-toast hidden">FASE 1 — PRONTO!</div>
+
+    <!-- Tela Inicial (START) -->
+    <div id="start-overlay" class="overlay-card">
+      <div class="overlay-badge">ARCADE 3D</div>
+      <h1 class="overlay-title">EGG-MAN 3D</h1>
+      <p class="overlay-desc">
+        Percorra o labirinto, recolha todas as bolinhas e pegue as
+        <strong>Moedas de Ovo Douradas</strong> para quebrar a casca dos 4 ovos inimigos!
+      </p>
+      <div class="controls-hint-grid">
+        <div class="hint-item">
+          <span class="hint-key">WASD / Setas</span>
+          <span class="hint-text">Teclado + Zoom no Scroll</span>
+        </div>
+        <div class="hint-item">
+          <span class="hint-key">D-Pad / Swipe</span>
+          <span class="hint-text">Touch + Zoom em Pinça</span>
+        </div>
+      </div>
+      <button id="start-game-btn" class="primary-action-btn" type="button">
+        JOGAR AGORA
+      </button>
+    </div>
+
+    <!-- Banner de Conclusão de Fase (STAGE_CLEAR) -->
+    <div id="stage-clear-banner" class="overlay-card hidden">
+      <div class="overlay-badge">VITÓRIA</div>
+      <h2 class="overlay-title">FASE CONCLUÍDA!</h2>
+      <p id="stage-clear-subtitle" class="overlay-desc">
+        Todos os coletáveis do labirinto foram recolhidos.
+      </p>
+      <button id="next-stage-btn" class="primary-action-btn" type="button">
+        PRÓXIMA FASE (Enter / Espaço)
+      </button>
+    </div>
+
+    <!-- Tela de Fim de Jogo (GAME_OVER) -->
+    <div id="gameover-overlay" class="overlay-card gameover-card hidden">
+      <div class="overlay-badge danger">FIM DE JOGO</div>
+      <h2 class="overlay-title">GAME OVER</h2>
+      <div class="gameover-stats">
+        <div class="stat-pill">
+          <span>PONTUAÇÃO FINAL</span>
+          <strong id="final-score-val">0000</strong>
+        </div>
+        <div class="stat-pill">
+          <span>RECORDE (HIGH SCORE)</span>
+          <strong id="final-highscore-val">0000</strong>
+        </div>
+      </div>
+      <button id="restart-game-btn" class="primary-action-btn" type="button">
+        JOGAR NOVAMENTE
+      </button>
+    </div>
+
+    <!-- Modal de Configurações e Customização da Casca (⚙️) -->
+    <div id="settings-modal" class="modal-backdrop hidden">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3>Configurações &amp; Customização</h3>
+          <button id="close-settings-btn" class="modal-close-btn" type="button">✕</button>
+        </div>
+
+        <div class="modal-section">
+          <div class="setting-row">
+            <div>
+              <div class="setting-title">Modo de Controle (Teclado)</div>
+              <div class="setting-sub">Segurar tecla para andar ou movimento contínuo arcade</div>
+            </div>
+            <button id="modal-control-btn" class="hud-toggle-btn" type="button">
+              Segurar Tecla (HOLD)
+            </button>
+          </div>
+
+          <div class="setting-row">
+            <div>
+              <div class="setting-title">Controle Mobile (Touch)</div>
+              <div class="setting-sub">Direcional D-Pad na tela ou gestos de deslizar (Swipe)</div>
+            </div>
+            <button id="modal-mobile-control-btn" class="hud-toggle-btn" type="button">
+              Botões D-Pad (Tela)
+            </button>
+          </div>
+
+          <div class="setting-row">
+            <div>
+              <div class="setting-title">Efeitos Sonoros (Web Audio)</div>
+              <div class="setting-sub">Sintetizador retro procedural</div>
+            </div>
+            <button id="modal-audio-btn" class="hud-toggle-btn audio-btn" type="button">
+              Ligado
+            </button>
+          </div>
+
+          <div class="setting-row setting-col">
+            <div class="zoom-row-header">
+              <div>
+                <div class="setting-title">Zoom da Câmera (Afastamento)</div>
+                <div class="setting-sub">Também ajustável pela roda do mouse ou pinça com 2 dedos</div>
+              </div>
+              <span id="camera-zoom-val" class="zoom-badge">1.00x</span>
+            </div>
+            <input
+              id="camera-zoom-range"
+              class="zoom-slider"
+              type="range"
+              min="1.0"
+              max="1.8"
+              step="0.05"
+              value="1.0"
+            />
+          </div>
+        </div>
+
+        <div class="modal-section">
+          <div class="setting-title">Customização da Casca do Egg-Man</div>
+          <div class="setting-sub">Escolha a aparência do protagonista (salva automaticamente)</div>
+          <div id="skin-selector-grid" class="skin-grid"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Direcional Virtual Translúcido (D-Pad Mobile no Canto Inferior Esquerdo) -->
+    <div id="virtual-dpad" class="virtual-dpad hidden" aria-label="Direcional Virtual">
+      <button type="button" class="dpad-btn dpad-up" data-dpad-dir="up" aria-label="Cima">▲</button>
+      <button type="button" class="dpad-btn dpad-left" data-dpad-dir="left" aria-label="Esquerda">◀</button>
+      <div class="dpad-center"></div>
+      <button type="button" class="dpad-btn dpad-right" data-dpad-dir="right" aria-label="Direita">▶</button>
+      <button type="button" class="dpad-btn dpad-down" data-dpad-dir="down" aria-label="Baixo">▼</button>
+    </div>
+
+    <div class="hud-bottom">
+      <span>Desktop: <strong>WASD / Scroll Zoom</strong> • Mobile: <strong>D-Pad / Swipe / Pinça</strong> • Config: <strong>⚙️</strong></span>
+    </div>
+  </div>
+
+  <!-- Container do Canvas WebGL -->
+  <div id="game-container"></div>
+
+  <script type="module" src="./js/main.js"></script>
+</body>
+</html>

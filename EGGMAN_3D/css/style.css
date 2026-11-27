@@ -1,0 +1,761 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  touch-action: none;
+  background-color: #0d1117;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: #ffffff;
+}
+
+#game-container {
+  width: 100vw;
+  height: 100vh;
+  display: block;
+}
+
+/* ==========================================================================
+   1. Sobreposição Obrigatória de Modo Paisagem (Landscape) no Mobile
+   Exibida apenas em dispositivos touch quando em orientação retrato (portrait)
+   ========================================================================== */
+#rotate-device-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: radial-gradient(circle at center, #1e293b 0%, #090d16 100%);
+  color: #f8fafc;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  text-align: center;
+}
+
+@media (pointer: coarse) and (orientation: portrait) {
+  #rotate-device-overlay {
+    display: flex;
+  }
+}
+
+.rotate-card {
+  max-width: 340px;
+  background: rgba(15, 23, 42, 0.92);
+  border: 2px solid #fbbf24;
+  border-radius: 20px;
+  padding: 28px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+}
+
+.rotate-phone-icon {
+  font-size: 3.2rem;
+  animation: rotatePulse 1.8s ease-in-out infinite;
+}
+
+@keyframes rotatePulse {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(-90deg); }
+}
+
+.rotate-card h2 {
+  font-size: 1.45rem;
+  font-weight: 900;
+  color: #fbbf24;
+  letter-spacing: 1.5px;
+}
+
+.rotate-card p {
+  font-size: 0.92rem;
+  line-height: 1.45;
+  color: #e2e8f0;
+}
+
+.rotate-card strong {
+  color: #fbbf24;
+}
+
+.rotate-sub {
+  font-size: 0.76rem;
+  color: #94a3b8;
+}
+
+/* ==========================================================================
+   2. HUD Principal
+   ========================================================================== */
+#hud {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 16px 24px;
+  z-index: 10;
+}
+
+.hud-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.hud-right-group {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.hud-box {
+  background: rgba(15, 23, 42, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(8px);
+  padding: 10px 18px;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 145px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+}
+
+.hud-center-box {
+  min-width: 245px;
+  gap: 5px;
+}
+
+.hud-center-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hud-sep {
+  color: #64748b;
+  font-size: 0.8rem;
+}
+
+.hud-label {
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 1.4px;
+  color: #fbbf24;
+}
+
+.hud-value {
+  font-size: 1.45rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: #f8fafc;
+}
+
+.hud-subvalue {
+  font-size: 0.82rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #cbd5e1;
+}
+
+/* Ícones de Vidas em Formato de Ovo */
+.lives-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.lives-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 1.1px;
+  color: #94a3b8;
+}
+
+.lives-container {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.life-egg-icon {
+  width: 14px;
+  height: 18px;
+  display: inline-block;
+  background: radial-gradient(circle at 35% 30%, #fef08a, #f59e0b 75%);
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  border-radius: 50% 50% 50% 50% / 62% 62% 38% 38%;
+  box-shadow: 0 0 8px rgba(251, 191, 36, 0.55);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.life-egg-icon.lost {
+  opacity: 0.2;
+  filter: grayscale(100%);
+  box-shadow: none;
+  transform: scale(0.85);
+}
+
+/* Botão Engrenagem (Configurações) */
+.gear-btn {
+  pointer-events: auto;
+  cursor: pointer;
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(8px);
+  font-size: 1.3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+  transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+
+.gear-btn:hover {
+  background: rgba(30, 41, 59, 0.95);
+  border-color: rgba(251, 191, 36, 0.6);
+  transform: rotate(25deg);
+}
+
+.gear-btn:active {
+  transform: scale(0.94);
+}
+
+/* Indicador Regressivo de Superpoder */
+.power-badge {
+  margin-top: 4px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.power-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  color: #38bdf8;
+  font-variant-numeric: tabular-nums;
+}
+
+.power-bar-track {
+  width: 100%;
+  height: 6px;
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.power-bar-fill {
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(90deg, #0284c7, #38bdf8);
+  transition: width 0.08s linear;
+}
+
+/* Toast central de "PRONTO!" */
+.ready-toast {
+  align-self: center;
+  background: rgba(15, 23, 42, 0.92);
+  border: 2px solid #fbbf24;
+  color: #fbbf24;
+  padding: 12px 28px;
+  border-radius: 999px;
+  font-size: 1.25rem;
+  font-weight: 900;
+  letter-spacing: 2px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.65);
+}
+
+/* ==========================================================================
+   3. Direcional Virtual Translúcido (D-Pad Mobile)
+   ========================================================================== */
+.virtual-dpad {
+  position: fixed;
+  left: 22px;
+  bottom: 22px;
+  width: 144px;
+  height: 144px;
+  pointer-events: auto;
+  touch-action: none;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: 4px;
+  z-index: 20;
+}
+
+.dpad-btn {
+  cursor: pointer;
+  touch-action: none;
+  background: rgba(15, 23, 42, 0.62);
+  border: 1.5px solid rgba(255, 255, 255, 0.24);
+  backdrop-filter: blur(6px);
+  color: rgba(248, 250, 252, 0.85);
+  border-radius: 12px;
+  font-size: 1.15rem;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  transition: background 0.08s ease, transform 0.08s ease, border-color 0.08s ease;
+}
+
+.dpad-btn.active {
+  background: rgba(251, 191, 36, 0.85);
+  border-color: #fef08a;
+  color: #0f172a;
+  transform: scale(0.94);
+  box-shadow: 0 0 14px rgba(251, 191, 36, 0.6);
+}
+
+.dpad-up {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.dpad-left {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.dpad-center {
+  grid-column: 2;
+  grid-row: 2;
+  background: rgba(15, 23, 42, 0.35);
+  border-radius: 50%;
+  margin: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.dpad-right {
+  grid-column: 3;
+  grid-row: 2;
+}
+
+.dpad-down {
+  grid-column: 2;
+  grid-row: 3;
+}
+
+/* ==========================================================================
+   4. Telas de Sobreposição e Modal de Configurações
+   ========================================================================== */
+.overlay-card {
+  align-self: center;
+  pointer-events: auto;
+  max-width: 440px;
+  width: 92%;
+  background: rgba(15, 23, 42, 0.93);
+  border: 2px solid rgba(251, 191, 36, 0.75);
+  backdrop-filter: blur(12px);
+  padding: 24px 28px;
+  border-radius: 20px;
+  text-align: center;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.75);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.gameover-card {
+  border-color: rgba(239, 68, 68, 0.8);
+}
+
+.overlay-badge {
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 2px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: rgba(251, 191, 36, 0.16);
+  color: #fbbf24;
+  border: 1px solid rgba(251, 191, 36, 0.4);
+}
+
+.overlay-badge.danger {
+  background: rgba(239, 68, 68, 0.18);
+  color: #f87171;
+  border-color: rgba(239, 68, 68, 0.45);
+}
+
+.overlay-title {
+  font-size: 1.85rem;
+  font-weight: 900;
+  letter-spacing: 1.5px;
+  color: #f8fafc;
+}
+
+.overlay-desc {
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: #cbd5e1;
+}
+
+.overlay-desc strong {
+  color: #fbbf24;
+}
+
+.controls-hint-grid {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 2px 0;
+}
+
+.hint-item {
+  background: rgba(30, 41, 59, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.hint-key {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #fbbf24;
+}
+
+.hint-text {
+  font-size: 0.72rem;
+  color: #94a3b8;
+}
+
+.gameover-stats {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 4px 0;
+}
+
+.stat-pill {
+  background: rgba(30, 41, 59, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stat-pill span {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #94a3b8;
+  letter-spacing: 0.8px;
+}
+
+.stat-pill strong {
+  font-size: 1.35rem;
+  color: #fbbf24;
+  font-variant-numeric: tabular-nums;
+}
+
+.primary-action-btn {
+  cursor: pointer;
+  width: 100%;
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  color: #0f172a;
+  border: none;
+  border-radius: 12px;
+  padding: 11px 22px;
+  font-size: 0.94rem;
+  font-weight: 900;
+  letter-spacing: 0.8px;
+  box-shadow: 0 6px 18px rgba(245, 158, 11, 0.35);
+  transition: transform 0.1s ease, filter 0.15s ease;
+}
+
+.primary-action-btn:hover {
+  filter: brightness(1.08);
+}
+
+.primary-action-btn:active {
+  transform: scale(0.98);
+}
+
+/* Modal de Configurações e Customização */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  pointer-events: auto;
+  background: rgba(2, 6, 23, 0.72);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px;
+  z-index: 30;
+}
+
+.modal-card {
+  width: 100%;
+  max-width: 500px;
+  max-height: 92vh;
+  overflow-y: auto;
+  background: rgba(15, 23, 42, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 18px;
+  padding: 18px 22px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 10px;
+}
+
+.modal-header h3 {
+  font-size: 1.05rem;
+  color: #fbbf24;
+  letter-spacing: 0.5px;
+}
+
+.modal-close-btn {
+  cursor: pointer;
+  background: rgba(51, 65, 85, 0.6);
+  color: #e2e8f0;
+  border: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.modal-close-btn:hover {
+  background: rgba(71, 85, 105, 0.9);
+}
+
+.modal-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.setting-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  background: rgba(30, 41, 59, 0.55);
+  padding: 9px 13px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.setting-row.setting-col {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.zoom-row-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.zoom-badge {
+  background: rgba(56, 189, 248, 0.16);
+  border: 1px solid rgba(56, 189, 248, 0.45);
+  color: #38bdf8;
+  padding: 3px 10px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.zoom-slider {
+  width: 100%;
+  accent-color: #fbbf24;
+  cursor: pointer;
+  height: 6px;
+}
+
+.setting-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #f8fafc;
+}
+
+.setting-sub {
+  font-size: 0.72rem;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+
+/* Seletor de Casca do Egg-Man */
+.skin-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.skin-card {
+  cursor: pointer;
+  background: rgba(30, 41, 59, 0.65);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 8px 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  color: #e2e8f0;
+  transition: border-color 0.15s ease, transform 0.1s ease, background 0.15s ease;
+}
+
+.skin-card:hover {
+  background: rgba(51, 65, 85, 0.75);
+}
+
+.skin-card.active {
+  border-color: #fbbf24;
+  background: rgba(251, 191, 36, 0.12);
+}
+
+.skin-swatch {
+  width: 24px;
+  height: 31px;
+  display: inline-block;
+  border-radius: 50% 50% 50% 50% / 62% 62% 38% 38%;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  box-shadow: inset -3px -4px 8px rgba(0, 0, 0, 0.35), 0 3px 8px rgba(0, 0, 0, 0.4);
+}
+
+.skin-name {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-align: center;
+  line-height: 1.15;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.hud-bottom {
+  align-self: center;
+  display: flex;
+  align-items: center;
+  background: rgba(15, 23, 42, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 5px 16px;
+  border-radius: 20px;
+  font-size: 0.76rem;
+  color: #cbd5e1;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+}
+
+.hud-bottom strong {
+  color: #fbbf24;
+}
+
+.hud-toggle-btn {
+  pointer-events: auto;
+  cursor: pointer;
+  background: rgba(37, 99, 235, 0.85);
+  color: #f8fafc;
+  border: 1px solid rgba(147, 197, 253, 0.4);
+  border-radius: 10px;
+  padding: 6px 12px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+
+.hud-toggle-btn:hover {
+  background: rgba(59, 130, 246, 0.95);
+}
+
+.hud-toggle-btn.mode-continuous {
+  background: rgba(217, 119, 6, 0.88);
+  border-color: rgba(253, 230, 138, 0.45);
+}
+
+.hud-toggle-btn.audio-btn {
+  background: rgba(16, 185, 129, 0.82);
+  border-color: rgba(110, 231, 183, 0.4);
+}
+
+.hud-toggle-btn.audio-btn.audio-muted {
+  background: rgba(71, 85, 105, 0.85);
+  border-color: rgba(148, 163, 184, 0.4);
+  color: #cbd5e1;
+}
+
+/* Ajustes para Telas Compactas em Modo Paisagem (Mobile Landscape) */
+@media (max-height: 500px) {
+  #hud {
+    padding: 8px 14px;
+  }
+  .hud-box {
+    padding: 6px 12px;
+    min-width: 110px;
+  }
+  .hud-center-box {
+    min-width: 190px;
+  }
+  .hud-value {
+    font-size: 1.15rem;
+  }
+  .virtual-dpad {
+    left: 16px;
+    bottom: 14px;
+    width: 128px;
+    height: 128px;
+  }
+  .hud-bottom {
+    display: none;
+  }
+  .overlay-card {
+    padding: 16px 22px;
+    gap: 8px;
+  }
+  .overlay-title {
+    font-size: 1.45rem;
+  }
+}
+
+@media (max-width: 560px) {
+  .skin-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
