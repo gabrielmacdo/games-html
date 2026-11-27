@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>EGGFIRE — 3D First-Person Arena Shooter</title>
+  <!-- Favicon SVG inline temático (Ovo com mira tática) para evitar 404 no GitHub Pages -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M32 6C19 6 12 24 12 39c0 12 9 19 20 19s20-7 20-19C52 24 45 6 32 6z' fill='%23fff6e0' stroke='%23e69d00' stroke-width='3'/%3E%3Ccircle cx='32' cy='32' r='11' fill='none' stroke='%23ff3b30' stroke-width='2.5'/%3E%3Cpath d='M32 16v32M16 32h32' stroke='%23ff3b30' stroke-width='2.5' stroke-linecap='round'/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="./css/style.css" />
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+      }
+    }
+  </script>
+</head>
+<body>
+  <!-- Sobreposição obrigatória para Mobile em Retrato (exige Paisagem / Landscape) -->
+  <div id="rotate-device-overlay" aria-live="assertive">
+    <div class="rotate-card">
+      <div class="rotate-icon">📱↻</div>
+      <h2>GIRE O DISPOSITIVO</h2>
+      <p>Para jogar <strong>EGGFIRE 3D</strong> com controles Dual-Touch, coloque o celular na horizontal (modo paisagem).</p>
+    </div>
+  </div>
+
+  <div id="app">
+    <canvas id="game-canvas"></canvas>
+
+    <!-- Borda Energética Ciano quando o Escudo (SHIELD) está ativo -->
+    <div id="shield-screen-fx" aria-hidden="true"></div>
+
+    <!-- Flash Vermelho nas bordas da tela ao sofrer dano de projétil inimigo -->
+    <div id="damage-screen-fx" aria-hidden="true"></div>
+
+    <!-- HUD Principal de Combate (Limpo, sem telemetria de debug) -->
+    <div id="hud">
+      <div id="top-bar">
+        <!-- Canto Superior Esquerdo: Minimapa Radar 2D + Legenda Tática -->
+        <div id="radar-wrapper">
+          <canvas id="radar-canvas" width="170" height="170"></canvas>
+          <div class="radar-legend">
+            <span><i class="dot red"></i>Inimigo</span>
+            <span><i class="dot gold"></i>Fuzil</span>
+            <span><i class="dot cyan"></i>Escudo</span>
+            <span><i class="dot green"></i>Cura</span>
+          </div>
+        </div>
+
+        <!-- Painel Central Superior: Horda Atual (WAVE), Placar (SCORE), Inimigos Restantes e Avisos -->
+        <div id="top-center-combat">
+          <div class="combat-counters">
+            <div class="counter-box">
+              <span class="counter-label">HORDA</span>
+              <span id="wave-value" class="counter-value cyan-text">01</span>
+            </div>
+            <div class="counter-box">
+              <span class="counter-label">SCORE</span>
+              <span id="score-value" class="counter-value gold-text">0000</span>
+            </div>
+            <div class="counter-box">
+              <span class="counter-label">INIMIGOS</span>
+              <span id="enemies-value" class="counter-value red-text">4</span>
+            </div>
+          </div>
+          <div id="pickup-toast" aria-live="polite"></div>
+        </div>
+
+        <!-- Canto Superior Direito: Recorde + Botões de Tela Cheia (⛶), Som (🔊) e Configurações (⚙️) -->
+        <div id="top-right-panel">
+          <div class="top-actions-row">
+            <button id="btn-fullscreen" class="hud-icon-btn" type="button" title="Tela Cheia">⛶</button>
+            <button id="btn-audio" class="hud-icon-btn" type="button" title="Alternar Som (Tecla M)">🔊</button>
+            <button id="btn-settings" class="hud-icon-btn" type="button" title="Configurações (Tecla P ou ESC)">⚙️</button>
+          </div>
+          <div class="badge record-badge">RECORDE: <span id="hud-highscore">0000</span></div>
+        </div>
+      </div>
+
+      <!-- Banner Central de Transição de Horda (WAVE_CLEAR) -->
+      <div id="wave-banner" class="hidden" aria-live="assertive">
+        <div class="wave-banner-inner">
+          <div id="wave-banner-title" class="wave-banner-title">HORDA 1 CONCLUÍDA!</div>
+          <div id="wave-banner-sub" class="wave-banner-sub">Power-Ups Reabastecidos • Prepare-se para a próxima Horda...</div>
+        </div>
+      </div>
+
+      <!-- Crosshair Central -->
+      <div id="crosshair" aria-hidden="true">
+        <span class="ch-line ch-top"></span>
+        <span class="ch-line ch-right"></span>
+        <span class="ch-line ch-bottom"></span>
+        <span class="ch-line ch-left"></span>
+        <span class="ch-dot"></span>
+      </div>
+
+      <!-- Controles Mobile Dual-Touch (Visíveis em dispositivos touch pointer: coarse) -->
+      <div id="touch-controls" aria-hidden="true">
+        <!-- Esquerda: Joystick Analógico Virtual 360° -->
+        <div id="joystick-zone">
+          <div id="joystick-base">
+            <div id="joystick-knob"></div>
+          </div>
+        </div>
+
+        <!-- Direita: Zona de Arrasto da Mira (Yaw / Pitch) + Botão Dedicado de Disparo (🔥) -->
+        <div id="touch-look-zone"></div>
+        <button id="btn-touch-fire" type="button" aria-label="Atirar">🔥</button>
+      </div>
+
+      <!-- Painel Inferior de Combate: Saúde (HP), Escudo Ativo e Arma Equipada -->
+      <div id="combat-hud-bottom">
+        <!-- Bloco Esquerdo: Saúde (HP) + Barra de Escudo -->
+        <div class="hud-card status-card">
+          <div class="bar-row">
+            <div class="bar-Header">
+              <span class="bar-label">INTEGRIDADE DA CASCA (HP)</span>
+              <span id="hp-value" class="bar-number">100 / 100</span>
+            </div>
+            <div class="bar-track">
+              <div id="hp-fill" class="bar-fill hp" style="width: 100%;"></div>
+            </div>
+          </div>
+
+          <!-- Barra Regressiva do Escudo Ciano (visível quando ativo) -->
+          <div id="shield-bar-container" class="bar-row hidden">
+            <div class="bar-Header">
+              <span class="bar-label cyan-text">🛡️ ESCUDO ENERGÉTICO</span>
+              <span id="shield-timer-text" class="bar-number cyan-text">10.0s</span>
+            </div>
+            <div class="bar-track">
+              <div id="shield-fill" class="bar-fill shield" style="width: 100%;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bloco Direito: Arma Equipada + Barra Regressiva do Egg-Rifle -->
+        <div class="hud-card weapon-card">
+          <div class="weapon-header">
+            <span class="weapon-tag">ARMA EQUIPADA</span>
+            <span id="weapon-ammo" class="weapon-ammo">∞ MUNIÇÃO</span>
+          </div>
+          <div id="weapon-name" class="weapon-title">EGG-PISTOL</div>
+          <div id="weapon-sub" class="weapon-sub">Semigatilho • 35 Dano • 0.32s</div>
+
+          <div id="rifle-bar-container" class="bar-row hidden">
+            <div class="bar-Header">
+              <span class="bar-label gold-text">🔥 CARGA DO FUZIL</span>
+              <span id="rifle-timer-text" class="bar-number gold-text">10.0s</span>
+            </div>
+            <div class="bar-track">
+              <div id="rifle-fill" class="bar-fill rifle" style="width: 100%;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================================================================= -->
+    <!-- TELA 1: START / PAUSE OVERLAY                                           -->
+    <!-- ======================================================================= -->
+    <div id="start-screen" class="modal-overlay visible">
+      <div class="modal-card">
+        <div class="egg-crest">🥚🎯</div>
+        <h1 id="start-title">EGGFIRE 3D</h1>
+        <p id="start-subtitle" class="subtitle">First-Person Arena Shooter no Universo Egg-Man</p>
+
+        <div class="records-strip">
+          <div><span>RECORDE (HIGH SCORE)</span><strong id="start-highscore" class="gold-text">0000</strong></div>
+          <div><span>MELHOR HORDA</span><strong id="start-maxwave" class="cyan-text">HORDA 1</strong></div>
+        </div>
+
+        <div class="controls-grid">
+          <div><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> / <kbd>Setas</kbd><span>Mover &amp; Strafe 360°</span></div>
+          <div><kbd>Mouse</kbd> / <kbd>Touch Dir.</kbd><span>Mirar nos Ovos Inimigos</span></div>
+          <div><kbd>Clique Esq.</kbd> / <kbd>Espaço</kbd> / <kbd>🔥</kbd><span>Atirar (Segure no Fuzil)</span></div>
+          <div><kbd>P</kbd> ou <kbd>⚙️ Config</kbd><span>Sensibilidade, Som e Skins</span></div>
+        </div>
+
+        <button id="btn-start" class="primary-btn" type="button">ENTRAR NA ARENA</button>
+      </div>
+    </div>
+
+    <!-- ======================================================================= -->
+    <!-- TELA 2: MODAL DE CONFIGURAÇÕES (⚙️)                                     -->
+    <!-- ======================================================================= -->
+    <div id="settings-modal" class="modal-overlay">
+      <div class="modal-card settings-card">
+        <h2>⚙️ CONFIGURAÇÕES TÁTICAS</h2>
+        <p class="subtitle">Personalize sua mira, áudio e acabamento da arma</p>
+
+        <div class="settings-section">
+          <div class="setting-header">
+            <label for="slider-sensitivity">Sensibilidade da Mira</label>
+            <span id="sensitivity-label" class="gold-text mono">1.0x</span>
+          </div>
+          <input id="slider-sensitivity" type="range" min="0.5" max="2.0" step="0.1" value="1.0" />
+        </div>
+
+        <div class="settings-section">
+          <div class="setting-header">
+            <span>Efeitos Sonoros (Web Audio API)</span>
+            <button id="btn-settings-audio" class="toggle-pill" type="button">🔊 LIGADO</button>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <div class="setting-header">
+            <span>Acabamento da Arma &amp; Luva</span>
+          </div>
+          <div id="skin-selector" class="skin-grid">
+            <button type="button" class="skin-option active" data-skin="tactical">
+              <span class="skin-swatch swatch-tactical"></span>
+              <span>Aço Tático</span>
+            </button>
+            <button type="button" class="skin-option" data-skin="imperial">
+              <span class="skin-swatch swatch-imperial"></span>
+              <span>Ouro Imperial</span>
+            </button>
+            <button type="button" class="skin-option" data-skin="plasma">
+              <span class="skin-swatch swatch-plasma"></span>
+              <span>Ciano Plasma</span>
+            </button>
+            <button type="button" class="skin-option" data-skin="yolk">
+              <span class="skin-swatch swatch-yolk"></span>
+              <span>Camuflagem Gema</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button id="btn-close-settings" class="primary-btn" type="button">VOLTAR AO COMBATE</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================================================================= -->
+    <!-- TELA 3: GAME OVER (CASCA QUEBRADA)                                      -->
+    <!-- ======================================================================= -->
+    <div id="gameover-screen" class="modal-overlay">
+      <div class="modal-card gameover-card">
+        <div class="egg-crest">💥🥚</div>
+        <h1 class="red-text">CASCA FRAGMENTADA!</h1>
+        <p class="subtitle">Você tombou em combate na Arena Eggfire</p>
+
+        <div class="stats-grid">
+          <div class="stat-box">
+            <span>PONTUAÇÃO FINAL</span>
+            <strong id="go-score" class="gold-text">0000</strong>
+          </div>
+          <div class="stat-box">
+            <span>HORDA ALCANÇADA</span>
+            <strong id="go-wave" class="cyan-text">HORDA 1</strong>
+          </div>
+          <div class="stat-box">
+            <span>RECORDE (HIGH SCORE)</span>
+            <strong id="go-highscore" class="gold-text">0000</strong>
+          </div>
+          <div class="stat-box">
+            <span>MELHOR HORDA</span>
+            <strong id="go-maxwave" class="cyan-text">HORDA 1</strong>
+          </div>
+        </div>
+
+        <button id="btn-restart" class="primary-btn" type="button">JOGAR NOVAMENTE</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="./js/main.js"></script>
+</body>
+</html>
